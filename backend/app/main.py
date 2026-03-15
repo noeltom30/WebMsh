@@ -95,6 +95,14 @@ async def list_geometry():
     return _geometries
 
 
+@app.delete("/geometry/{geom_id}", tags=["geometry"], response_model=Geometry)
+async def delete_geometry(geom_id: int):
+    for idx, geom in enumerate(_geometries):
+        if geom.id == geom_id:
+            return _geometries.pop(idx)
+    raise HTTPException(status_code=404, detail="Geometry not found")
+
+
 @app.post("/geometry/box", tags=["geometry"], response_model=Geometry)
 async def create_box(body: BoxRequest):
     if not _gmsh_available():
@@ -145,9 +153,9 @@ async def upload_cad(file: UploadFile = File(...)):
 
     filename = file.filename or "cad_file"
     ext = Path(filename).suffix.lower().lstrip(".")
-    allowed = {"step", "stp", "iges", "igs", "brep", "stl"}
+    allowed = {"step", "stp", "iges", "igs", "brep", "stl", "vtk", "msh"}
     if ext not in allowed:
-        raise HTTPException(status_code=400, detail="Unsupported CAD format. Use STEP, IGES, BREP, or STL.")
+        raise HTTPException(status_code=400, detail="Unsupported format. Use STEP, IGES, BREP, STL, VTK, or MSH.")
 
     try:
         content = await file.read()
@@ -262,19 +270,104 @@ def _extract_surface_mesh() -> Mesh:
         for i in range(len(node_ids))
     ]
 
+    # Prefer surface elements; if missing, derive boundary from volume elements.
     elem_types, _, elem_node_tags = gmsh.model.mesh.getElements(dim=2)
-    triangles: list[list[int]] = []
-    for idx, etype in enumerate(elem_types):
-        if etype != 2:  # type 2 = triangle elements
-            continue
-        node_tags = elem_node_tags[idx]
-        for i in range(0, len(node_tags), 3):
-            triangles.append([
-                int(node_tags[i]),
-                int(node_tags[i + 1]),
-                int(node_tags[i + 2]),
-            ])
+    source = "surface"
+    if not elem_types:
+        elem_types, _, elem_node_tags = gmsh.model.mesh.getElements()
+        source = "volume"
 
+    triangles: list[list[int]] = []
+    boundary = set()
+
+    def add_tri(a: int, b: int, c: int):
+        key = tuple(sorted((int(a), int(b), int(c))))
+        if key in boundary:
+            # Internal face (shared by two elements); skip to keep boundary only.
+            return
+        boundary.add(key)
+        triangles.append([int(a), int(b), int(c)])
+
+    for idx, etype in enumerate(elem_types):
+        node_tags = elem_node_tags[idx]
+        name, dim, order, num_nodes, _, num_primary = gmsh.model.mesh.getElementProperties(etype)
+        stride = num_nodes or 0
+        primary = num_primary or num_nodes
+        if not stride or primary is None:
+            continue
+
+        # If this is already a triangle element, just collect them.
+        if dim == 2 and primary == 3:
+            for i in range(0, len(node_tags), stride):
+                a, b, c = node_tags[i:i + 3]
+                add_tri(a, b, c)
+            continue
+
+        # If this is a quad, split into two tris.
+        if dim == 2 and primary == 4:
+            for i in range(0, len(node_tags), stride):
+                a, b, c, d = node_tags[i:i + primary]
+                add_tri(a, b, c)
+                add_tri(a, c, d)
+            continue
+
+        # For volume elements, use primary corner nodes to build boundary faces.
+        if dim == 3:
+            for i in range(0, len(node_tags), stride):
+                corners = list(node_tags[i:i + primary])
+                if len(corners) < primary:
+                    continue
+
+                if primary == 4:  # tetra (any order)
+                    a, b, c, d = corners[:4]
+                    add_tri(a, b, c)
+                    add_tri(a, b, d)
+                    add_tri(a, c, d)
+                    add_tri(b, c, d)
+                    continue
+
+                if primary == 5:  # pyramid
+                    a, b, c, d, e = corners[:5]
+                    add_tri(a, b, c)
+                    add_tri(a, c, d)
+                    add_tri(a, b, e)
+                    add_tri(b, c, e)
+                    add_tri(c, d, e)
+                    add_tri(d, a, e)
+                    continue
+
+                if primary == 6:  # prism/wedge
+                    a, b, c, d, e, f = corners[:6]
+                    add_tri(a, b, c)
+                    add_tri(d, f, e)
+                    quads = [(a, b, f, d), (b, c, e, f), (c, a, d, e)]
+                    for q in quads:
+                        q1, q2, q3, q4 = q
+                        add_tri(q1, q2, q3)
+                        add_tri(q1, q3, q4)
+                    continue
+
+                if primary == 8:  # hex
+                    a, b, c, d, e, f, g, h = corners[:8]
+                    faces = [
+                        (a, b, c, d),
+                        (e, f, g, h),
+                        (a, b, f, e),
+                        (b, c, g, f),
+                        (c, d, h, g),
+                        (d, a, e, h),
+                    ]
+                    for face in faces:
+                        x, y, z, w = face
+                        add_tri(x, y, z)
+                        add_tri(x, z, w)
+                    continue
+
+                # Fallback: take first three nodes of the element chunk.
+                if primary >= 3:
+                    add_tri(corners[0], corners[1], corners[2])
+
+    # If we got nothing (e.g., degenerate input), return empty triangles to avoid crashes.
     return Mesh(nodes=nodes, triangles=triangles)
 
 
@@ -285,9 +378,15 @@ def _build_mesh_from_cad(path: Path) -> Mesh:
     gmsh.initialize([])
     try:
         gmsh.open(str(path))
-        if not gmsh.model.getEntities():
-            raise ValueError("CAD file contains no entities")
-        gmsh.model.mesh.generate(2)
+        entities = gmsh.model.getEntities()
+        if not entities and len(gmsh.model.mesh.getNodes()[0]) == 0:
+            raise ValueError("CAD/mesh file contains no entities or nodes")
+
+        # If the file already contains a mesh, keep it. If it lacks surface elements, generate surface mesh.
+        existing_node_ids, _, _ = gmsh.model.mesh.getNodes()
+        surf_elem_types, _, _ = gmsh.model.mesh.getElements(dim=2)
+        if len(existing_node_ids) == 0 or not surf_elem_types:
+            gmsh.model.mesh.generate(2)
         return _extract_surface_mesh()
     finally:
         gmsh.finalize()
