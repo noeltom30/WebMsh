@@ -71,6 +71,16 @@ body {
   flex: 1;
 }
 
+/* Hide sidebar scrollbars while keeping scroll capability */
+.sidebar-body {
+  scrollbar-width: none;
+}
+
+.sidebar-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .sidebar-section {
   font-size: 11px;
   text-transform: uppercase;

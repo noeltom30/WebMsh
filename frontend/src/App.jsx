@@ -276,6 +276,17 @@ function App() {
     }
   }
 
+  const handleDeleteGeom = async (id) => {
+    try {
+      await api.deleteGeometry(id)
+      const list = await api.listGeometry()
+      setGeoms(list)
+      setLastAction(`Deleted geometry ${id}`)
+    } catch (err) {
+      setLastAction(err.body?.detail || 'Failed to delete geometry')
+    }
+  }
+
   const refreshInfo = async () => {
     const [h, i, g] = await Promise.all([api.health(), api.info(), api.listGeometry()])
     setHealth(h)
@@ -370,11 +381,11 @@ function App() {
                 <button className="btn" onClick={handleCylinder}>Create</button>
               </li>
               <li className="list-row">
-                <span>Import CAD</span>
+                <span>Import CAD / Mesh</span>
                 <div className="field-row file-row">
                   <input
                     type="file"
-                    accept=".step,.stp,.iges,.igs,.brep,.stl"
+                    accept=".step,.stp,.iges,.igs,.brep,.stl,.vtk,.msh"
                     onChange={e => setCadFile(e.target.files?.[0] || null)}
                   />
                   <span className="file-name">{cadFile ? cadFile.name : 'No file chosen'}</span>
@@ -411,7 +422,16 @@ function App() {
                 <div className="sidebar-section">Geometry List</div>
                 <ul className="sidebar-list compact">
                   {geoms.map(g => (
-                    <li key={g.id}>{g.type} #{g.id} — {JSON.stringify(g.params)}</li>
+                    <li key={g.id}>
+                      {g.type} #{g.id} — {JSON.stringify(g.params)}
+                      <button
+                        className="btn"
+                        style={{ marginLeft: '8px', padding: '4px 8px' }}
+                        onClick={() => handleDeleteGeom(g.id)}
+                      >
+                        Delete
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </div>
