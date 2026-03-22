@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMsh User Profile Wireframe</title>
+  <style>
+    :root {
+      --bg: #f2f2f2;
+      --panel: #ffffff;
+      --line: #1d1d1d;
+      --text: #111111;
+      --muted: #666666;
+      --s1: 6px;
+      --s2: 10px;
+      --s3: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 0 var(--s2);
+      gap: var(--s2);
+    }
+
+    .top-left,
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: var(--s1);
+    }
+
+    .top-right { justify-content: flex-end; }
+
+    .chip,
+    .btn,
+    .field,
+    .slot {
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .field {
+      justify-content: flex-start;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 0;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      padding: var(--s2);
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s2);
+    }
+
+    .content {
+      padding: var(--s2);
+      overflow: auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--s2);
+      align-content: start;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: var(--s2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s1);
+    }
+
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s1);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: var(--s1);
+      align-items: center;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s2);
+    }
+
+    .avatar {
+      width: 90px;
+      height: 90px;
+      border: 1px solid var(--line);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .projects-list {
+      min-height: 180px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        padding: 6px var(--s2);
+      }
+
+      .top-right {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="top-left">
+        <div class="chip">WebMsh</div>
+        <div class="btn">Dashboard</div>
+        <div class="btn">Projects</div>
+        <div class="btn">Profile</div>
+      </div>
+      <div class="top-right">
+        <div class="field" style="width:180px;">Search Projects</div>
+        <div class="btn">Sign Out</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <section class="card">
+          <div class="title">Profile Navigation</div>
+          <div class="stack">
+            <div class="btn">Overview</div>
+            <div class="btn">Account Details</div>
+            <div class="btn">Connected OAuth</div>
+            <div class="btn">Session & Security</div>
+            <div class="btn">Saved Projects</div>
+            <div class="btn">Notifications</div>
+            <div class="btn">Preferences</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Quick Actions</div>
+          <div class="stack">
+            <div class="btn">Create New Project</div>
+            <div class="btn">Open Recent Project</div>
+            <div class="btn">Upload CAD</div>
+            <div class="btn">Download Account Data</div>
+            <div class="btn">Delete Account</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section class="card">
+          <div class="title">User Profile Overview</div>
+          <div class="two-col">
+            <div class="stack">
+              <div class="row"><div class="slot">Avatar</div><div class="avatar">Image Placeholder</div></div>
+              <div class="row"><div class="slot">Display Name</div><div class="field">Full Name Placeholder</div></div>
+              <div class="row"><div class="slot">Email</div><div class="field">user@example.com</div></div>
+              <div class="row"><div class="slot">Role</div><div class="field">Student / Engineer / Researcher</div></div>
+            </div>
+            <div class="stack">
+              <div class="row"><div class="slot">Joined Date</div><div class="field">Date Placeholder</div></div>
+              <div class="row"><div class="slot">Last Active</div><div class="field">Timestamp Placeholder</div></div>
+              <div class="row"><div class="slot">Project Count</div><div class="field">Number Placeholder</div></div>
+              <div class="row"><div class="slot">Storage Used</div><div class="field">Value Placeholder</div></div>
+            </div>
+          </div>
+          <div class="stack" style="margin-top: 4px;">
+            <div class="btn">Edit Profile</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Connected Authentication</div>
+          <div class="sub">OAuth provider links used by WebMsh login flow</div>
+          <div class="row"><div class="slot">Google</div><div class="field">Connected / Not Connected</div></div>
+          <div class="row"><div class="slot">GitHub</div><div class="field">Connected / Not Connected</div></div>
+          <div class="stack">
+            <div class="btn">Link Provider</div>
+            <div class="btn">Unlink Provider</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Session and Security</div>
+          <div class="row"><div class="slot">Current Session</div><div class="field">JWT Access Session Placeholder</div></div>
+          <div class="row"><div class="slot">Refresh Session</div><div class="field">Token Expiry Placeholder</div></div>
+          <div class="row"><div class="slot">Active Devices</div><div class="field">Device List Placeholder</div></div>
+          <div class="stack">
+            <div class="btn">Sign Out Current Session</div>
+            <div class="btn">Sign Out All Sessions</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Saved Projects</div>
+          <div class="projects-list">
+            Project Card Placeholder 1: Name, Last Modified, Thumbnail<br />
+            Project Card Placeholder 2: Name, Last Modified, Thumbnail<br />
+            Project Card Placeholder 3: Name, Last Modified, Thumbnail<br />
+            Project Card Placeholder 4: Name, Last Modified, Thumbnail
+          </div>
+          <div class="stack">
+            <div class="btn">Open Selected Project</div>
+            <div class="btn">Rename Selected Project</div>
+            <div class="btn">Delete Selected Project</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Preferences</div>
+          <div class="row"><div class="slot">Theme</div><div class="field">Light / Dark Toggle Placeholder</div></div>
+          <div class="row"><div class="slot">Default Viewer Mode</div><div class="field">Wireframe / Shaded Placeholder</div></div>
+          <div class="row"><div class="slot">Auto Save</div><div class="field">Enabled / Disabled Placeholder</div></div>
+          <div class="stack">
+            <div class="btn">Save Preferences</div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

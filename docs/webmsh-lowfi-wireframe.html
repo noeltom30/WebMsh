@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMsh Low-Fidelity Wireframe</title>
+  <style>
+    :root {
+      --bg: #f3f3f3;
+      --panel: #ffffff;
+      --line: #1f1f1f;
+      --text: #111111;
+      --muted: #666666;
+      --space-1: 6px;
+      --space-2: 10px;
+      --space-3: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 54px 1fr;
+      gap: 0;
+    }
+
+    .bar {
+      border: 1px solid var(--line);
+      border-left: 0;
+      border-right: 0;
+      background: var(--panel);
+      padding: 0 var(--space-2);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .bar-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .bar-group.right {
+      justify-content: flex-end;
+    }
+
+    .chip,
+    .btn,
+    .field,
+    .placeholder {
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .field {
+      justify-content: flex-start;
+      color: var(--muted);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 290px 1fr 320px;
+      min-height: 0;
+    }
+
+    .panel {
+      border-right: 1px solid var(--line);
+      background: var(--panel);
+      overflow: auto;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .panel.right {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      background: #fff;
+    }
+
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .main {
+      background: #fff;
+      position: relative;
+      border-right: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+
+    .floating-top-left,
+    .floating-top-right {
+      position: absolute;
+      top: var(--space-2);
+      display: flex;
+      gap: var(--space-1);
+      z-index: 2;
+    }
+
+    .floating-top-left { left: var(--space-2); }
+    .floating-top-right { right: var(--space-2); }
+
+    .viewport {
+      position: absolute;
+      inset: 64px 22px 64px 22px;
+      border: 2px dashed var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px;
+      color: var(--muted);
+    }
+
+    .floating-bottom-left,
+    .floating-bottom-right {
+      position: absolute;
+      bottom: var(--space-2);
+      min-height: 42px;
+      border: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      background: #fff;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .floating-bottom-left { left: var(--space-2); width: 260px; }
+    .floating-bottom-right { right: var(--space-2); width: 300px; }
+
+    .listbox {
+      min-height: 120px;
+      border: 1px solid var(--line);
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1200px) {
+      .workspace {
+        grid-template-columns: 250px 1fr 280px;
+      }
+      .bar {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding: 6px;
+      }
+      .bar-group.right {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="bar">
+      <div class="bar-group">
+        <div class="chip">Logo</div>
+        <div class="field" style="width: 180px;">Project Name</div>
+        <div class="btn">Dashboard</div>
+      </div>
+
+      <div class="bar-group" style="justify-content: center;">
+        <div class="btn">Undo</div>
+        <div class="btn">Redo</div>
+        <div class="btn">Save</div>
+        <div class="btn">AutoSave ON/OFF</div>
+        <div class="btn">Screenshot</div>
+        <div class="btn">Theme</div>
+        <div class="btn">Help/Shortcuts</div>
+      </div>
+
+      <div class="bar-group right">
+        <div class="field" style="width: 140px;">User Profile</div>
+        <div class="btn">Sign Out</div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="panel left">
+        <section class="card">
+          <div class="title">Project Management</div>
+          <div class="stack">
+            <div class="btn">New Project</div>
+            <div class="btn">Open Project</div>
+            <div class="btn">Rename Project</div>
+            <div class="btn">Delete Project</div>
+            <div class="field">Last Modified / Thumbnail</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Geometry Creation</div>
+          <div class="stack">
+            <div class="btn">Box</div>
+            <div class="btn">Sphere</div>
+            <div class="btn">Cylinder</div>
+            <div class="btn">Cone</div>
+            <div class="btn">Torus</div>
+            <div class="placeholder" style="height: 76px; color: var(--muted);">Primitive Parameters Form Placeholder</div>
+            <div class="btn">Create</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Model Operations</div>
+          <div class="stack">
+            <div class="btn">Extrude</div>
+            <div class="btn">Revolve</div>
+            <div class="btn">Union (Fuse)</div>
+            <div class="btn">Cut (Subtract)</div>
+            <div class="btn">Intersect</div>
+            <div class="btn">Translate</div>
+            <div class="btn">Rotate</div>
+            <div class="btn">Scale</div>
+            <div class="btn">Copy</div>
+            <div class="btn">Delete</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Import</div>
+          <div class="stack">
+            <div class="placeholder">Drag and Drop Zone</div>
+            <div class="btn">Upload STEP STL IGES BREP VTK MSH</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Mesh Controls</div>
+          <div class="stack">
+            <div class="field">Dimension 1D 2D 3D</div>
+            <div class="field">Min Size / Max Size</div>
+            <div class="field">2D Algorithm Selector</div>
+            <div class="field">3D Algorithm Selector</div>
+            <div class="btn">Recombine Quads</div>
+            <div class="btn">Second Order</div>
+            <div class="btn">Refine</div>
+            <div class="btn">Optimize</div>
+            <div class="btn">Generate Mesh</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Physical Groups</div>
+          <div class="stack">
+            <div class="field">Dimension 0/1/2/3</div>
+            <div class="field">Group Name Input</div>
+            <div class="btn">Create Group</div>
+            <div class="btn">Add Selected Entities</div>
+            <div class="btn">Remove Entities</div>
+            <div class="btn">Delete Group</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="title">Export</div>
+          <div class="stack">
+            <div class="btn">Export MSH</div>
+            <div class="btn">Export STL</div>
+            <div class="btn">Export VTK</div>
+            <div class="btn">Export STEP</div>
+            <div class="btn">Export INP</div>
+            <div class="btn">Export UNV</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="floating-top-left">
+          <div class="btn">Select</div>
+          <div class="btn">Pan</div>
+          <div class="btn">Orbit</div>
+          <div class="btn">Zoom</div>
+        </div>
+
+        <div class="floating-top-right">
+          <div class="btn">Wireframe</div>
+          <div class="btn">X Ray</div>
+          <div class="btn">Clip Plane</div>
+          <div class="btn">Axis Gizmo</div>
+        </div>
+
+        <div class="viewport">
+          3D Viewport Placeholder<br />
+          ThreeJS Canvas Region
+        </div>
+
+        <div class="floating-bottom-left">Selection / Hover Info</div>
+        <div class="floating-bottom-right">Operation Progress / Global Notification / Error Bar</div>
+      </main>
+
+      <aside class="panel right">
+        <section class="card">
+          <div class="title">Model Tree / Entity Browser</div>
+          <div class="listbox">Points / Curves / Surfaces / Volumes</div>
+          <div class="btn">Deselect (Esc)</div>
+        </section>
+
+        <section class="card">
+          <div class="title">Entity Property Inspector</div>
+          <div class="field">Entity ID / Type</div>
+          <div class="field">Bounding Box</div>
+          <div class="field">Area / Volume</div>
+          <div class="field">Centroid</div>
+        </section>
+
+        <section class="card">
+          <div class="title">Mesh Statistics</div>
+          <div class="field">Node Count</div>
+          <div class="field">Element Counts by Type</div>
+          <div class="field">Min / Max Element Size</div>
+        </section>
+
+        <section class="card">
+          <div class="title">Session Status</div>
+          <div class="field">Backend Health</div>
+          <div class="field">gmsh Availability</div>
+          <div class="field">Geometry Count</div>
+          <div class="field">Last Action / Error Toast</div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>

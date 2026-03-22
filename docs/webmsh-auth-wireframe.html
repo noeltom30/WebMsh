@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMsh Auth Wireframe (Login / Sign Up)</title>
+  <style>
+    :root {
+      --bg: #f2f2f2;
+      --panel: #ffffff;
+      --line: #1e1e1e;
+      --text: #111111;
+      --muted: #666666;
+      --s1: 6px;
+      --s2: 10px;
+      --s3: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--s2);
+    }
+
+    .chip,
+    .btn,
+    .field,
+    .slot {
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .field {
+      justify-content: flex-start;
+      color: var(--muted);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 460px;
+      gap: var(--s2);
+      padding: var(--s2);
+      min-height: 0;
+    }
+
+    .left-info,
+    .auth-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: var(--s3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s2);
+      overflow: auto;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .listbox {
+      border: 1px solid var(--line);
+      min-height: 180px;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s1);
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      padding: var(--s2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s1);
+      background: #fff;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: var(--s1);
+      align-items: center;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s1);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s1);
+    }
+
+    .divider {
+      border-top: 1px dashed var(--line);
+      margin: 4px 0;
+    }
+
+    @media (max-width: 1100px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <div class="chip">WebMsh</div>
+        <div class="slot">Authentication</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <div class="btn">Back to Home</div>
+        <div class="btn">Help</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="left-info">
+        <div class="title">WebMsh Access Portal</div>
+        <div class="sub">Low-fidelity wireframe for user authentication and onboarding.</div>
+
+        <div class="card">
+          <div class="slot">Product Value Placeholder</div>
+          <div class="listbox">
+            - Browser-based geometry and meshing workspace<br />
+            - Project save/open workflow<br />
+            - Import CAD and generate mesh<br />
+            - Export simulation-ready formats
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="slot">Security and Session Notes</div>
+          <div class="listbox">
+            - OAuth Login (Google / GitHub)<br />
+            - JWT Access + Refresh Session Placeholder<br />
+            - Session expiration and sign-out controls
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="slot">Support / Legal Links Placeholder</div>
+          <div class="split">
+            <div class="btn">Terms</div>
+            <div class="btn">Privacy</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="tabs">
+          <div class="btn">Login</div>
+          <div class="btn">Sign Up</div>
+        </div>
+
+        <section class="card">
+          <div class="slot">Login Form</div>
+          <div class="row"><div class="slot">Email</div><div class="field">name@domain.com</div></div>
+          <div class="row"><div class="slot">Password</div><div class="field">Password Placeholder</div></div>
+          <div class="split">
+            <div class="field">Remember Me Checkbox</div>
+            <div class="btn">Forgot Password</div>
+          </div>
+          <div class="btn">Sign In</div>
+
+          <div class="divider"></div>
+
+          <div class="stack">
+            <div class="btn">Continue with Google</div>
+            <div class="btn">Continue with GitHub</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="slot">Sign Up Form</div>
+          <div class="row"><div class="slot">Full Name</div><div class="field">User Full Name</div></div>
+          <div class="row"><div class="slot">Email</div><div class="field">name@domain.com</div></div>
+          <div class="row"><div class="slot">Password</div><div class="field">Create Password</div></div>
+          <div class="row"><div class="slot">Confirm Password</div><div class="field">Confirm Password</div></div>
+          <div class="field">I agree to Terms and Privacy (checkbox)</div>
+          <div class="btn">Create Account</div>
+
+          <div class="divider"></div>
+
+          <div class="stack">
+            <div class="btn">Sign Up with Google</div>
+            <div class="btn">Sign Up with GitHub</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="slot">Validation / Feedback Area</div>
+          <div class="field">Inline Form Errors Placeholder</div>
+          <div class="field">Authentication Error Toast Placeholder</div>
+          <div class="field">Success Message Placeholder</div>
+        </section>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
