@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
+from typing import Literal
 
 try:
     import gmsh  # type: ignore
@@ -65,6 +66,12 @@ class Geometry(BaseModel):
     type: str
     params: dict
     mesh: Mesh | None = None
+
+
+class BooleanRequest(BaseModel):
+    operation: Literal["fuse", "cut", "intersect"]
+    left_id: int = Field(gt=0, description="ID of the target/left geometry")
+    right_id: int = Field(gt=0, description="ID of the tool/right geometry")
 
 
 _geometries: list[Geometry] = []
@@ -142,8 +149,88 @@ async def create_cylinder(body: CylinderRequest):
     return geom
 
 
+@app.post("/geometry/boolean", tags=["geometry"], response_model=Geometry)
+async def create_boolean(body: BooleanRequest):
+    if not _gmsh_available():
+        raise HTTPException(status_code=503, detail="gmsh is not available on the server")
+
+    left = _get_geometry(body.left_id)
+    right = _get_geometry(body.right_id)
+
+    allowed = {"box", "sphere", "cylinder"}
+    if left.type not in allowed or right.type not in allowed:
+        raise HTTPException(status_code=400, detail="Boolean operations currently supported for box, sphere, and cylinder only")
+
+    try:
+        mesh = _build_boolean_mesh(body.operation, left, right)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    new_id = len(_geometries) + 1
+    params = {"operation": body.operation, "left": left.id, "right": right.id}
+    geom = Geometry(id=new_id, type="boolean", params=params, mesh=mesh)
+    _geometries.append(geom)
+    return geom
+
+
 def _gmsh_available():
     return gmsh is not None
+
+
+def _get_geometry(geom_id: int) -> Geometry:
+    for geom in _geometries:
+        if geom.id == geom_id:
+            return geom
+    raise HTTPException(status_code=404, detail=f"Geometry {geom_id} not found")
+
+
+def _add_geom_to_occ(geom: Geometry):
+    if gmsh is None:
+        raise RuntimeError("gmsh is not installed")
+
+    if geom.type == "box":
+        p = geom.params
+        tag = gmsh.model.occ.addBox(p["origin_x"], p["origin_y"], p["origin_z"], p["width"], p["depth"], p["height"])
+        return (3, tag)
+
+    if geom.type == "sphere":
+        p = geom.params
+        tag = gmsh.model.occ.addSphere(p["center_x"], p["center_y"], p["center_z"], p["radius"])
+        return (3, tag)
+
+    if geom.type == "cylinder":
+        p = geom.params
+        tag = gmsh.model.occ.addCylinder(p["base_x"], p["base_y"], p["base_z"], 0.0, 0.0, p["height"], p["radius"])
+        return (3, tag)
+
+    raise ValueError(f"Geometry type '{geom.type}' is not supported for boolean operations")
+
+
+def _build_boolean_mesh(operation: str, left: Geometry, right: Geometry) -> Mesh:
+    if gmsh is None:
+        raise RuntimeError("gmsh is not installed")
+
+    gmsh.initialize([])
+    try:
+        gmsh.model.add("boolean")
+        left_ent = _add_geom_to_occ(left)
+        right_ent = _add_geom_to_occ(right)
+        gmsh.model.occ.synchronize()
+
+        if operation == "fuse":
+            gmsh.model.occ.fuse([left_ent], [right_ent])
+        elif operation == "cut":
+            gmsh.model.occ.cut([left_ent], [right_ent])
+        elif operation == "intersect":
+            gmsh.model.occ.intersect([left_ent], [right_ent])
+        else:
+            raise ValueError(f"Unsupported operation '{operation}'")
+
+        gmsh.model.occ.synchronize()
+        gmsh.model.mesh.generate(2)
+        return _extract_surface_mesh()
+    finally:
+        gmsh.finalize()
 
 
 @app.post("/geometry/upload", tags=["geometry"], response_model=Geometry)

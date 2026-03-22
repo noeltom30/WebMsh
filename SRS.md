@@ -23,6 +23,8 @@
    - 3.2 [Functional Requirements](#32-functional-requirements)
    - 3.3 [External Interface Requirements](#33-external-interface-requirements)
    - 3.4 [Non-Functional Requirements](#34-non-functional-requirements)
+4. [Architecture Diagram](#4-architecture-diagram)
+   - 4.2 [Technology Stack Overview](#42-technology-stack-overview)
 
 ---
 
@@ -428,10 +430,43 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ![Architecture Diagram](architecture.png)
 
-### 4.2. The below image is an example of what the typical workspace must look like.
+### 4.2. Technology Stack Overview
 
-![Workspace](typical.jpeg)
+**Backend (Python 3.10+)**
 
-### 4.3. Below is an image of the functioning backend API
+1. **Runtime & Server**: Uvicorn (ASGI server) hosting FastAPI application on configurable port.
+2. **Framework**: FastAPI for REST API definition, automatic OpenAPI documentation, request routing, and HTTP exception handling.
+3. **API Layer**: RESTful endpoints organized by domain (geometry, project, export, system) with tag-based organization.
+4. **Request/Response Validation**: Pydantic with BaseModel classes, field validation, type hints, and range constraints.
+5. **Middleware**: CORS middleware for cross-origin requests in development; configurable allowed origins, methods, and credentials.
+6. **File Handling**: Python-multipart for parsing multipart form data; tempfile module for secure temporary CAD file storage during processing; format validation; size limits enforced.
+7. **Geometry & Mesh Core**: Gmsh Python API with bundled OpenCASCADE for geometry creation (primitives: box, sphere, cylinder, cone, torus; transforms: translate, rotate, scale, copy, delete), mesh generation (2D/3D, surface/volume elements), boundary extraction, element type conversion, and CAD file import.
+8. **Session State**: In-memory storage of geometry objects per session (ephemeral, not persisted across server restarts).
 
-![Workspace](image.png)
+**Frontend (JavaScript/React)**
+
+1. **Build Tool**: Vite with React plugin for fast HMR and JSX transformation.
+2. **Framework**: React with functional components and Hooks (useState, useRef, useEffect) for state, lifecycle, and side effects.
+3. **3D Graphics**: Three.js for WebGL 2.0 rendering including:
+4. **API Client**: HTTP client module supporting JSON payloads and FormData for file uploads; configurable API endpoint via environment variables.
+5. **UI/Styling**: CSS for layout, theming, and responsive design.
+6. **Development Tools**: ESLint for code quality; React Refresh for fast refresh during development.
+7. **Type Support**: TypeScript type definitions for IDE support.
+
+**Data & Storage**
+
+- **Current**: In-memory session storage on backend (ephemeral per session).
+- **Planned**: PostgreSQL (production) or SQLite (development) for user accounts, project metadata, and physical group definitions; filesystem storage organized by user/project for binary geometry files, JSON metadata, mesh exports, and thumbnails.
+
+**Session & Concurrency**
+
+- One Gmsh subprocess per active user session (thread-safety); subprocess lifecycle managed per operation; no persistent model state between requests.
+- Planned: Idle session timeout, max concurrent session limit, graceful session reconnection.
+
+**Deployment & Security**
+
+- **Containerization**: Docker for containerized deployment with dependency manifest.
+- **Network**: TLS termination at reverse proxy (planned); encrypted communication (HTTPS/WSS) for production.
+- **File Security**: Uploaded file validation by extension whitelist; temporary storage in isolated directory; automatic cleanup on error or timeout.
+- **Authentication**: Planned OAuth 2.0 (Google, GitHub) with JWT tokens (separate access and refresh lifetimes) in HTTP-only, Secure, SameSite cookies.
+- **Rate Limiting**: Planned per-user request throttling at API middleware.

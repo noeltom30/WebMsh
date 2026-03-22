@@ -71,7 +71,6 @@ body {
   flex: 1;
 }
 
-/* Hide sidebar scrollbars while keeping scroll capability */
 .sidebar-body {
   scrollbar-width: none;
 }
@@ -97,6 +96,46 @@ body {
   line-height: 1.6;
   font-size: 13px;
   width: inherit;
+}
+.geometry-entry{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;      /* critical — allows flex children to shrink below content size */
+  overflow: hidden;
+  border: #c5cbe8 1px solid;
+  padding: 2px;
+}
+.geom-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.geom-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.geom-param {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  overflow: hidden;
+}
+.geom-param-border{
+  border: #cfd2de solid 1px;
+}
+
+.geom-param-key {
+  padding: 2px 5px;
+  font-weight: 600;
+}
+
+.geom-param-val {
+  padding: 2px 5px;
 }
 
 .sidebar-list li {
@@ -171,11 +210,15 @@ body {
   background: rgba(15, 19, 29, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
+  width: inherit;
   padding: 10px 12px;
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.card li{
+  width: inherit;
 }
 
 .status-row {

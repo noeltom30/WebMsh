@@ -33,6 +33,7 @@ export const api = {
   createBox: (body) => request('/geometry/box', { method: 'POST', body: JSON.stringify(body) }),
   createSphere: (body) => request('/geometry/sphere', { method: 'POST', body: JSON.stringify(body) }),
   createCylinder: (body) => request('/geometry/cylinder', { method: 'POST', body: JSON.stringify(body) }),
+  createBoolean: (body) => request('/geometry/boolean', { method: 'POST', body: JSON.stringify(body) }),
   deleteGeometry: (id) => request(`/geometry/${id}`, { method: 'DELETE' }),
   uploadCAD: (file) => {
     const form = new FormData()
