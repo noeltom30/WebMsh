@@ -15,27 +15,27 @@
    - 2.2 [Sprint List](#22-sprint-list)
    - 2.3 [Tasks Per Sprint](#23-tasks-per-sprint)
    - 2.4 [Sprint Journal](#24-sprint-journal)
-3. [Workflows, UML Diagram and Wireframes](#4-workflows-UML-Diagrams-and-Wireframes)
-   - 3.1 [Workflows](#41-workflow)
-      - 3.1.1 [High-Level Design Workflow Diagram](#411-High-Level-Design-Workflow-diagram)
-      - 3.1.2 [Operational Workflow Diagram](#412-operational-workflow-diagram)
-   - 3.2 [UML Diagrams](#42-uml-diagrams)
-      - 3.2.1 [Interaction Diagram](#421-interaction-Diagram)
-      - 3.2.2 [Sequence Diagram](#422-sequence-Diagram)
-      - 3.2.3 [Activity Diagram](#423-activity-Diagram)
-      - 3.2.4 [Class Diagram](#424-class-Diagram)
-      - 3.2.5 [Use Case Diagram](#425-use-case-Diagram)
-   - 3.3 [Wireframes](#43-wireframes)
-      - 3.3.1 [User Authenication Wireframe](#431-user-authenticaton-wireframe)
-      - 3.3.2 [User Profile Wireframe](#432-user-profile-wireframe)
-      - 3.3.3 [Main Application Wireframe](#433-main-application-wireframe)
-4. [Features and Requirements](#3-features-and-requirements)
-   - 4.2 [Functional Requirements](#32-functional-requirements)
-   - 4.3 [External Interface Requirements](#33-external-interface-requirements)
-   - 4.1 [Features](#31-features)
-   - 4.4 [Non-Functional Requirements](#34-non-functional-requirements)
-   - 4.5 [Assumptions and Dependencies](#35-assumptions-and-dependencies)
-   - 4.6 [Languages and Tools Used](#36-languages-and-tools-used)
+3. [Workflows, UML Diagram and Wireframes](#3-workflows-uml-diagrams-and-wireframes)
+   - 3.1 [Workflows](#31-workflow)
+      - 3.1.1 [High-Level Design Workflow Diagram](#311-high-level-design-workflow-diagram)
+      - 3.1.2 [Operational Workflow Diagram](#312-operational-workflow-diagram)
+   - 3.2 [UML Diagrams](#32-uml-diagrams)
+      - 3.2.1 [Interaction Diagram](321-interaction-diagram)
+      - 3.2.2 [Sequence Diagram](#322-sequence-diagram)
+      - 3.2.3 [Activity Diagram](#323-activity-diagram)
+      - 3.2.4 [Class Diagram](#324-class-diagram)
+      - 3.2.5 [Use Case Diagram](#325-use-case-diagram)
+   - 3.3 [Wireframes](#33-wireframes)
+      - 3.3.1 [User Authenication Wireframe](#331-user-authenticaton-wireframe)
+      - 3.3.2 [User Profile Wireframe](#332-user-profile-wireframe)
+      - 3.3.3 [Main Application Wireframe](#333-main-application-wireframe)
+4. [Features and Requirements](#4-features-and-requirements)
+   - 4.2 [Functional Requirements](#42-functional-requirements)
+   - 4.3 [External Interface Requirements](#43-external-interface-requirements)
+   - 4.1 [Features](#41-features)
+   - 4.4 [Non-Functional Requirements](#44-non-functional-requirements)
+   - 4.5 [Assumptions and Dependencies](#45-assumptions-and-dependencies)
+   - 4.6 [Languages and Tools Used](#46-languages-and-tools-used)
 ---
 
 ## 1. Product Overview
@@ -444,563 +444,60 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 ## 3. Workflows, UML Diagram and Wireframes
 ### 3.1 Workflows
 #### 3.1.1 High-Level Design Workflow (Input -> Core -> Output)
-```mermaid
-flowchart LR
-    %% =========================
-    %% INPUT LAYER
-    %% =========================
-    subgraph IN[Input Layer]
-        U1[User Geometry Parameters\nBox / Sphere / Cylinder]
-        U2[User CAD/Mesh File Upload\nSTEP/STP/IGES/IGS/BREP/STL/VTK/MSH]
-        U3[User Operation Commands\nCreate / Delete / Refresh / List]
-    end
 
-    %% =========================
-    %% CORE LAYER
-    %% =========================
-    subgraph CORE[Core Processing Layer]
-        FE[React UI + API Client\nVite Frontend]
-        API[FastAPI REST Layer\nValidation + Routing + Error Handling]
-        GMSH[gmsh Processing Engine\nOCC Geometry + Surface Meshing]
-        MESH[Mesh Extraction Engine\nNodes + Triangles Serialization]
-        MEM[In-Memory Geometry State\nSession-Local Geometry Catalog]
-    end
+![webmsh-high-level-workflow.png](webmsh-high-level-workflow.png)
 
-    %% =========================
-    %% OUTPUT LAYER
-    %% =========================
-    subgraph OUT[Output Layer]
-        O1[3D Viewport Rendering\nThree.js Scene + Orbit Controls]
-        O2[Geometry List + Status Cards\nHealth / gmsh / Geometry Count]
-        O3[Operation Feedback\nSuccess / Error Action Messages]
-    end
-
-    %% FLOW
-    IN --> FE
-    FE --> API
-    API --> GMSH
-    GMSH --> MESH
-    MESH --> MEM
-    MEM --> API
-    API --> FE
-    FE --> OUT
-
-    %% DESIGN STYLING
-    classDef input fill:#E8F1FF,stroke:#1F4B99,stroke-width:1.4,color:#0E2A57;
-    classDef core fill:#EEF8EE,stroke:#1B7F3A,stroke-width:1.4,color:#0F4F25;
-    classDef out fill:#FFF3E8,stroke:#B86200,stroke-width:1.4,color:#6B3500;
-
-    class U1,U2,U3 input;
-    class FE,API,GMSH,MESH,MEM core;
-    class O1,O2,O3 out;
-```
 ---
 
 #### 3.1.2 Detailed Workflow Diagram (Operational Flow)
 
-```mermaid
-flowchart TD
-    %% =========================================================
-    %% CLIENT-SIDE ENTRY
-    %% =========================================================
-    A0([User Opens WebMsh UI]) --> A1[Frontend bootstrap\nCall health info geometry]
-    A1 --> A2{Backend Reachable?}
-    A2 -- No --> A3[Show API Unavailable Notification]
-    A2 -- Yes --> A4[Initialize ThreeJS scene\nCamera lights grid controls]
+![webmsh-operational-workflow](webmsh-operational-workflow.png)
 
-    %% =========================================================
-    %% MAIN USER ACTIONS
-    %% =========================================================
-    A4 --> B0{User Action Type}
-
-    B0 -->|Create Box/Sphere/Cylinder| B1[Collect Form Inputs]
-    B1 --> B2[Frontend Validation + Type Conversion]
-    B2 --> B3[POST geometry box sphere cylinder]
-
-    B0 -->|Upload CAD/Mesh| C1[Choose File from Browser]
-    C1 --> C2{Allowed Extension?}
-    C2 -- No --> C3[Show Unsupported Format Error]
-    C2 -- Yes --> C4[POST geometry upload multipart form data]
-
-    B0 -->|Delete Geometry| D1[Click Delete on Geometry Item]
-    D1 --> D2[DELETE geometry by id]
-
-    B0 -->|Refresh Status| E1[Click Refresh]
-    E1 --> E2[GET health info geometry]
-
-    %% =========================================================
-    %% BACKEND ROUTING + VALIDATION
-    %% =========================================================
-    B3 --> S1[FastAPI Endpoint Routing]
-    C4 --> S1
-    D2 --> S1
-    E2 --> S1
-
-    S1 --> S2{gmsh Available?}
-    S2 -- No --> S3[Return HTTP 503\ngmsh not available]
-    S2 -- Yes --> S4{Operation Class}
-
-    %% =========================================================
-    %% GEOMETRY CREATION PATH
-    %% =========================================================
-    S4 -->|Primitive Creation| G1[gmsh initialize]
-    G1 --> G2[OCC primitive\nAdd box sphere cylinder]
-    G2 --> G3[OCC synchronize]
-    G3 --> G4[Mesh generate 2D]
-    G4 --> G5[Extract Nodes + Surface Elements]
-    G5 --> G6[Serialize as Mesh nodes + triangles]
-    G6 --> G7[Append to In-Memory Geometry List]
-    G7 --> G8[Return Geometry Payload]
-    G8 --> G9[gmsh finalize]
-
-    %% =========================================================
-    %% FILE UPLOAD PATH
-    %% =========================================================
-    S4 -->|CAD Upload| U1[Validate Extension + Read File]
-    U1 --> U2[Persist to Temp File]
-    U2 --> U3[gmsh initialize and open file]
-    U3 --> U4{Mesh Exists?}
-    U4 -- No --> U5[Mesh generate 2D]
-    U4 -- Yes --> U6[Use Existing Mesh]
-    U5 --> U7[Extract and convert to triangles]
-    U6 --> U7
-    U7 --> U8[Append CAD Geometry in Memory]
-    U8 --> U9[Delete temp file and gmsh finalize]
-    U9 --> U10[Return CAD Geometry Payload]
-
-    %% =========================================================
-    %% DELETE + LIST PATH
-    %% =========================================================
-    S4 -->|Delete Geometry| X1[Find ID in Geometry List]
-    X1 --> X2{Found?}
-    X2 -- No --> X3[Return HTTP 404]
-    X2 -- Yes --> X4[Remove Item + Return Deleted Entity]
-
-    S4 -->|Health/Info/List| Y1[Return System + Catalog State]
-
-    %% =========================================================
-    %% CLIENT RENDER LOOP UPDATE
-    %% =========================================================
-    G8 --> R1[Frontend refetch geometry]
-    U10 --> R1
-    X4 --> R1
-    Y1 --> R2[Update Status Cards]
-
-    R1 --> R3[Clear existing ThreeJS group]
-    R3 --> R4[Rebuild BufferGeometry from nodes + triangles]
-    R4 --> R5[Create wireframe edge visuals per type]
-    R5 --> R6[Render Updated Scene]
-    R6 --> R7[Show Last Action Message]
-
-    %% =========================================================
-    %% ERROR PATHS
-    %% =========================================================
-    S3 --> Z1[Frontend Displays Error Detail]
-    C3 --> Z1
-    X3 --> Z1
-
-    %% STYLING
-    classDef client fill:#E8F1FF,stroke:#1F4B99,stroke-width:1.2,color:#0E2A57;
-    classDef server fill:#EEF8EE,stroke:#1B7F3A,stroke-width:1.2,color:#0F4F25;
-    classDef gmsh fill:#FFF4E6,stroke:#B86200,stroke-width:1.2,color:#6B3500;
-    classDef error fill:#FDECEC,stroke:#B42318,stroke-width:1.2,color:#7A271A;
-
-    class A0,A1,A2,A3,A4,B0,B1,B2,B3,C1,C2,C3,C4,D1,D2,E1,E2,R1,R2,R3,R4,R5,R6,R7 client;
-    class S1,S2,S4,X1,X2,X3,X4,Y1 server;
-    class G1,G2,G3,G4,G5,G6,G7,G8,G9,U1,U2,U3,U4,U5,U6,U7,U8,U9,U10 gmsh;
-    class S3,Z1 error;
-```
 ---
 
 ### 3.2 UML Diagrams
 #### 3.2.1 Interaction Diagram
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant FE as Web Frontend (React + Three.js)
-    participant AUTH as Auth Service (OAuth + JWT)
-    participant API as Backend API (FastAPI)
-    participant GMSH as Gmsh Engine
-    participant DB as Project Metadata DB
-    participant FS as Project File Store
 
-    User->>FE: Open app
-    FE->>AUTH: Check session / refresh token
-    alt Not authenticated
-        FE->>AUTH: Redirect to OAuth provider
-        AUTH-->>FE: Access token + refresh token
-    end
-
-    FE->>API: Load projects + last state
-    API->>DB: Read project metadata
-    API->>FS: Read project geometry/state files
-    API-->>FE: Project list + workspace state
-
-    User->>FE: Create/modify geometry
-    FE->>API: Geometry operation request
-    API->>GMSH: Execute OCC operation + synchronize
-    GMSH-->>API: Updated entities
-
-    User->>FE: Generate mesh (1D/2D/3D)
-    FE->>API: Mesh request with settings
-    API->>GMSH: Generate mesh
-    GMSH-->>API: Nodes + elements + stats
-    API-->>FE: Mesh payload
-
-    User->>FE: Save project
-    FE->>API: Save state
-    API->>FS: Persist geometry/mesh state
-    API->>DB: Update metadata timestamp
-    API-->>FE: Save success
-```
+![webmsh-interaction-diagram.png](webmsh-interaction-diagram.png)
 
 ---
 
 #### 3.2.2 Sequence Diagram
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant FE as Frontend UI
-    participant API as FastAPI Backend
-    participant GMSH as Gmsh Service
-    participant TMP as Temp Storage
-    participant FS as Export File Store
 
-    User->>FE: Upload STEP/STL file
-    FE->>API: POST /geometry/upload (multipart file)
-    API->>API: Validate extension + size
-    alt Invalid file
-        API-->>FE: 400 Unsupported/invalid upload
-        FE-->>User: Show descriptive error toast
-    else Valid file
-        API->>TMP: Write temporary file
-        API->>GMSH: open(file)
-        alt File has no surface mesh
-            GMSH->>GMSH: generate(2D surface mesh)
-        end
-        GMSH-->>API: Extract nodes + triangles
-        API->>TMP: Delete temporary file
-        API-->>FE: Geometry payload (id, params, mesh)
-        FE-->>User: Render geometry in viewport
-    end
+![webmsh-sequence-diagram.png](webmsh-sequence-diagram.png)
 
-    User->>FE: Generate final mesh
-    FE->>API: POST mesh request (settings)
-    API->>GMSH: Apply size + algorithm + generate
-    alt Meshing fails
-        GMSH-->>API: Error details
-        API-->>FE: 422 Meshing failed
-        FE-->>User: Show failure notification
-    else Meshing succeeds
-        GMSH-->>API: Mesh + statistics
-        API-->>FE: Mesh + stats
-        FE-->>User: Update scene and mesh panel
-    end
-
-    User->>FE: Export mesh (e.g., VTK/MSH/STL)
-    FE->>API: Export request
-    API->>GMSH: Write export file
-    GMSH-->>API: File generated
-    API->>FS: Stream file response
-    API-->>FE: Download stream
-    FE-->>User: File downloaded
-```
 ---
 
 #### 3.2.3 Activity Diagram
-```mermaid
-flowchart TD
-  A[Open app] --> B{Session?}
-  B -- no --> C[OAuth login]
-  B -- yes --> D[Dashboard]
-  C --> D
 
-  D --> E[Open project]
-  E --> F[Load geometry + state]
-  F --> G[Scene ready]
+![webmsh-activity-diagram.png](webmsh-activity-diagram.png)
 
-  G --> H[Create geometry]
-  G --> I[Upload CAD]
-  H --> J[Backend mesh]
-  I --> J
-  J --> K[Update scene]
-
-  K --> L[Create/Update physical group]
-  L --> K
-
-  K --> M[Generate mesh]
-  M --> N[Show stats/mesh]
-  N --> O[Export]
-
-  K --> P[Undo/Redo]
-  P --> K
-
-  K --> Q[Save]
-  Q --> D
-```
 ---
 
 #### 3.2.4 Class Diagram
-```mermaid
-classDiagram
-  %% Frontend
-  class App {
-    +state auth, projects, geoms, meshSettings
-    +loadStatus()
-    +openProject(id)
-    +handleGeometryCrud()
-    +handlePhysicalGroups()
-    +handleMeshOps()
-    +handleExport()
-    +undoRedo()
-  }
 
-  class ApiClient {
-    +loginRedirect()
-    +refreshTokens()
-    +health()
-    +info()
-    +listProjects()
-    +loadProject(id)
-    +saveProject(payload)
-    +listGeometry()
-    +createBox(body)
-    +createSphere(body)
-    +createCylinder(body)
-    +uploadCAD(file)
-    +deleteGeometry(id)
-    +createPhysicalGroup(body)
-    +updatePhysicalGroup(id, body)
-    +deletePhysicalGroup(id)
-    +generateMesh(body)
-    +exportMesh(fmt)
-  }
+![webmsh-class-diagram.png](webmsh-class-diagram.png)
 
-  class ProjectState {
-    +string id
-    +string name
-    +Geometry[] geometries
-    +PhysicalGroup[] groups
-    +MeshSettings meshSettings
-    +ViewerState viewer
-  }
-
-  class PhysicalGroup {
-    +int id
-    +string name
-    +int dimension
-    +int[] entityTags
-    +string color
-  }
-
-  class MeshSettings {
-    +float minSize
-    +float maxSize
-    +string algo2d
-    +string algo3d
-    +bool recombine2d
-    +bool secondOrder
-  }
-
-  class ViewerState {
-    +cameraPose
-    +theme
-    +clippingPlane
-  }
-
-  class Geometry {
-    +int id
-    +string type
-    +dict params
-    +Mesh mesh
-  }
-
-  class Mesh {
-    +MeshNode[] nodes
-    +int[] triangles
-  }
-
-  class MeshNode {
-    +int id
-    +float x
-    +float y
-    +float z
-  }
-
-  %% Backend models
-  class BoxRequest {
-    +float width
-    +float depth
-    +float height
-    +float origin_x
-    +float origin_y
-    +float origin_z
-  }
-
-  class SphereRequest {
-    +float radius
-    +float center_x
-    +float center_y
-    +float center_z
-  }
-
-  class CylinderRequest {
-    +float radius
-    +float height
-    +float base_x
-    +float base_y
-    +float base_z
-  }
-
-  class PhysicalGroupRequest {
-    +string name
-    +int dimension
-    +int[] entityTags
-  }
-
-  class MeshRequest {
-    +int dimension
-    +MeshSettings settings
-  }
-
-  class ExportRequest {
-    +string format
-  }
-
-  class AuthSession {
-    +string userId
-    +string accessToken
-    +string refreshToken
-    +datetime expiresAt
-  }
-
-  class ProjectRecord {
-    +string id
-    +string userId
-    +string name
-    +datetime updatedAt
-    +path brepPath
-    +path metaPath
-  }
-
-  class GmshService {
-    <<utility>>
-    +buildBoxMesh(...)
-    +buildSphereMesh(...)
-    +buildCylinderMesh(...)
-    +buildMeshFromCad(path)
-    +generateMesh(settings)
-    +extractSurfaceMesh()
-  }
-
-  class FastAPIApp {
-    <<FastAPI>>
-    +getHealth()
-    +getInfo()
-    +listProjects()
-    +getProject(id)
-    +saveProject(id)
-    +listGeometry()
-    +createBox()
-    +createSphere()
-    +createCylinder()
-    +uploadCad()
-    +deleteGeometry(id)
-    +createPhysicalGroup()
-    +updatePhysicalGroup(id)
-    +deletePhysicalGroup(id)
-    +generateMesh()
-    +exportFile()
-  }
-
-  %% Relations
-  App --> ApiClient : uses
-  App --> ProjectState : holds
-  ProjectState --> Geometry : contains
-  ProjectState --> PhysicalGroup : contains
-  ProjectState --> MeshSettings : contains
-  ProjectState --> ViewerState : contains
-  Geometry --> Mesh : contains
-  Mesh --> MeshNode : aggregates
-
-  ApiClient --> FastAPIApp : HTTP
-  FastAPIApp --> Geometry : returns
-  FastAPIApp --> BoxRequest : validates
-  FastAPIApp --> SphereRequest : validates
-  FastAPIApp --> CylinderRequest : validates
-  FastAPIApp --> PhysicalGroupRequest : validates
-  FastAPIApp --> MeshRequest : validates
-  FastAPIApp --> ExportRequest : validates
-  FastAPIApp --> GmshService : meshes
-  FastAPIApp --> ProjectRecord : persists
-  FastAPIApp --> AuthSession : issues
-```
 ---
 
 #### 3.2.5 Use Case Diagram
-```mermaid
-flowchart LR
-    U([User])
-    OAUTH([OAuth Provider<br/>Google/GitHub])
-    ADMIN([System Admin])
 
-    subgraph SYS[WebMsh System]
-        UC1((Sign In / Sign Out))
-        UC2((Manage Profile))
-        UC3((Create Open Rename Delete Project))
-        UC4((Create Primitive Geometry))
-        UC5((Import CAD or Mesh File))
-        UC6((Boolean Operations))
-        UC7((Transform Operations))
-        UC8((Assign Physical Groups))
-        UC9((Generate Mesh 1D 2D 3D))
-        UC10((View and Inspect 3D Model))
-        UC11((Export Mesh or Geometry))
-        UC12((Undo / Redo))
-        UC13((Save or Auto-save Project))
-        UC14((View Errors and Status))
-        UC15((Manage Session Capacity and Health))
-    end
+![webmsh-usecase-diagram.png](webmsh-usecase-diagram.png)
 
-    U --- UC1
-    U --- UC2
-    U --- UC3
-    U --- UC4
-    U --- UC5
-    U --- UC6
-    U --- UC7
-    U --- UC8
-    U --- UC9
-    U --- UC10
-    U --- UC11
-    U --- UC12
-    U --- UC13
-    U --- UC14
-
-    OAUTH --- UC1
-    ADMIN --- UC15
-
-    UC3 -. includes .-> UC13
-    UC4 -. enables .-> UC9
-    UC5 -. enables .-> UC9
-    UC9 -. updates .-> UC10
-    UC9 -. may fail .-> UC14
-    UC6 -. may fail .-> UC14
-    UC7 -. may fail .-> UC14
-```
 ---
 
 ### 3.3 Wireframes
 #### 3.3.1 User Authenication Wireframe
 ![webmsh-auth-wireframe.png](webmsh-auth-wireframe.png)
+
 ---
 #### 3.3.2 User Profile Wireframe
 ![webmsh-user-profile-wireframe.png](webmsh-user-profile-wireframe.png)
+
 ---
 ### 3.3.3 Main Application Wireframe
 ![webmsh-lowfi-wireframe.png](webmsh-lowfi-wireframe.png)
+
 ---
 
 
