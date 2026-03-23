@@ -1,6 +1,27 @@
-# Software Requirements Specification — WebMsh
+# Software Requirements Specification
 
- WebMsh — A Web-Based Mesh Generation Platform
+## WebMsh — A Web-Based Mesh Generation Platform
+
+<p align="center">
+   <img src="webmsg-logo.jpeg" alt="WebMsh Logo" width="380" />
+</p>
+
+
+
+
+
+
+| Submitted by: | Submitted to: |
+|---|---|
+| Irfanul Haque Raque  | Dr. Nandu C Nair  |
+| BL.EN.U4CSE23070  | Department of CSE|
+| B.Tech CSE, 5th Semester  | 
+| Department of CSE |  |
+
+
+### March 23, 2026
+
+<div style="page-break-after: always;"></div>
 
 ---
 
@@ -14,28 +35,28 @@
    - 2.1 [Product Initial Wish List](#21-product-initial-wish-list)
    - 2.2 [Sprint List](#22-sprint-list)
    - 2.3 [Tasks Per Sprint](#23-tasks-per-sprint)
-   - 2.4 [Sprint Journal](#24-sprint-journal)
-3. [Workflows, UML Diagram and Wireframes](#3-workflows-uml-diagrams-and-wireframes)
-   - 3.1 [Workflows](#31-workflow)
-      - 3.1.1 [High-Level Design Workflow Diagram](#311-high-level-design-workflow-diagram)
-      - 3.1.2 [Operational Workflow Diagram](#312-operational-workflow-diagram)
-   - 3.2 [UML Diagrams](#32-uml-diagrams)
-      - 3.2.1 [Interaction Diagram](321-interaction-diagram)
-      - 3.2.2 [Sequence Diagram](#322-sequence-diagram)
-      - 3.2.3 [Activity Diagram](#323-activity-diagram)
-      - 3.2.4 [Class Diagram](#324-class-diagram)
-      - 3.2.5 [Use Case Diagram](#325-use-case-diagram)
-   - 3.3 [Wireframes](#33-wireframes)
-      - 3.3.1 [User Authenication Wireframe](#331-user-authenticaton-wireframe)
-      - 3.3.2 [User Profile Wireframe](#332-user-profile-wireframe)
-      - 3.3.3 [Main Application Wireframe](#333-main-application-wireframe)
-4. [Features and Requirements](#4-features-and-requirements)
-   - 4.2 [Functional Requirements](#42-functional-requirements)
-   - 4.3 [External Interface Requirements](#43-external-interface-requirements)
-   - 4.1 [Features](#41-features)
-   - 4.4 [Non-Functional Requirements](#44-non-functional-requirements)
-   - 4.5 [Assumptions and Dependencies](#45-assumptions-and-dependencies)
-   - 4.6 [Languages and Tools Used](#46-languages-and-tools-used)
+3. [Sprint Journal](#3-sprint-journal)
+4. [Workflows, UML Diagram and Wireframes](#4-workflows-uml-diagrams-and-wireframes)
+   - 4.1 [Workflows](#41-workflow)
+      - 4.1.1 [High-Level Design Workflow Diagram](#411-high-level-design-workflow-diagram)
+      - 4.1.2 [Operational Workflow Diagram](#412-operational-workflow-diagram)
+   - 4.2 [UML Diagrams](#42-uml-diagrams)
+      - 4.2.1 [Interaction Diagram](421-interaction-diagram)
+      - 4.2.2 [Sequence Diagram](#422-sequence-diagram)
+      - 4.2.3 [Activity Diagram](#423-activity-diagram)
+      - 4.2.4 [Class Diagram](#424-class-diagram)
+      - 4.2.5 [Use Case Diagram](#425-use-case-diagram)
+   - 4.3 [Wireframes](#43-wireframes)
+      - 4.3.1 [User Authenication Wireframe](#431-user-authenticaton-wireframe)
+      - 4.3.2 [User Profile Wireframe](#432-user-profile-wireframe)
+      - 4.3.3 [Main Application Wireframe](#433-main-application-wireframe)
+5. [Features and Requirements](#5-features-and-requirements)
+   - 5.2 [Functional Requirements](#52-functional-requirements)
+   - 5.3 [External Interface Requirements](#53-external-interface-requirements)
+   - 5.1 [Features](#51-features)
+   - 5.4 [Non-Functional Requirements](#54-non-functional-requirements)
+   - 5.5 [Assumptions and Dependencies](#55-assumptions-and-dependencies)
+   - 5.6 [Languages and Tools Used](#56-languages-and-tools-used)
 ---
 
 ## 1. Product Overview
@@ -64,9 +85,9 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 ![webmsh-product-vision-board.png](webmsh-product-vision-board.png)
 
  
-## 2. Planning
+# 2. Planning
 
-### 2.1 Product Initial Wish List
+## 2.1 Product Initial Wish List
 
 | # | Wish List Item |
 |---|---|
@@ -100,7 +121,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-### 2.2 Sprint List
+## 2.2 Sprint List
 
 | Sprint | Title | Outcome |
 |---|---|---|
@@ -111,9 +132,9 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-### 2.3 Tasks Per Sprint
+## 2.3 Tasks Per Sprint
 
-#### Sprint 1: Project Setup and Core Architecture — Total SP: 23
+### Sprint 1: Project Setup and Core Architecture — Total SP: 23
 
 | # | Task | SP |
 |---|---|---|
@@ -139,7 +160,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-#### Sprint 2: Primitive Geometry Creation and Mesh Generation — Total SP: 65
+### Sprint 2: Primitive Geometry Creation and Mesh Generation — Total SP: 65
 
 | # | Task | SP |
 |---|---|---|
@@ -166,7 +187,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-#### Sprint 3: Frontend 3D Viewer and Interaction — Total SP: 58
+### Sprint 3: Frontend 3D Viewer and Interaction — Total SP: 58
 
 | # | Task | SP |
 |---|---|---|
@@ -198,7 +219,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-#### Sprint 4: CAD/Mesh File Import and Geometry Management — Total SP: 56
+### Sprint 4: CAD/Mesh File Import and Geometry Management — Total SP: 56
 
 | # | Task | SP |
 |---|---|---|
@@ -229,8 +250,8 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-### 2.4 Sprint Journal
-#### Role Rotation Overview
+## 3. Sprint Journal
+### Role Rotation Overview
 
 | Sprint | Duration | My Role |
 |--------|----------|---------|
@@ -241,7 +262,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-#### Sprint 1 — Project Setup & Core Architecture
+### Sprint 1 — Project Setup & Core Architecture
 
 **Duration:** Feb 10 – Feb 14, 2025  
 **My Role: Product Owner**
@@ -250,26 +271,26 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 ---
 
-##### Daily Journal
+#### Daily Journal
 
-###### Day 1 — Monday, Feb 10  
+##### Day 1 — Monday, Feb 10  
 Defined initial SRS requirements and acceptance criteria for core backend endpoints.
 
-###### Day 2 — Tuesday, Feb 11 
+##### Day 2 — Tuesday, Feb 11 
 Reviewed SRS Section 1 product wishlist items and aligned them with Sprint 1 deliverables.
 
-###### Day 3 — Wednesday, Feb 12 
+##### Day 3 — Wednesday, Feb 12 
 Validated `/health` endpoint response matches SRS expectations.
 
-###### Day 4 — Thursday, Feb 13
+##### Day 4 — Thursday, Feb 13
 Drafted acceptance tests for CORS and route availability.
 
-###### Day 5 — Friday, Feb 14  
+##### Day 5 — Friday, Feb 14  
 Accepted Sprint 1 deliverables: repository structure, backend startup, and endpoint readiness.
 
 ---
 
-##### Sprint 1 Reflection
+#### Sprint 1 Reflection
 
 > *As Product Owner in Sprint 1, I learned the importance of clearly defining acceptance criteria early. Ensuring alignment with the SRS helped avoid ambiguity during development.*
 
@@ -277,7 +298,7 @@ Accepted Sprint 1 deliverables: repository structure, backend startup, and endpo
 
 ---
 
-##### Sprint 1 Retrospective
+#### Sprint 1 Retrospective
 
 | Category | Notes |
 |----------|-------|
@@ -287,7 +308,7 @@ Accepted Sprint 1 deliverables: repository structure, backend startup, and endpo
 
 ---
 
-#### Sprint 2 — Primitive Geometry Creation & Mesh Generation
+### Sprint 2 — Primitive Geometry Creation & Mesh Generation
 
 **Duration:** Feb 17 – Feb 21, 2025  
 **My Role: Scrum Master**
@@ -296,26 +317,26 @@ Accepted Sprint 1 deliverables: repository structure, backend startup, and endpo
 
 ---
 
-##### Daily Journal
+#### Daily Journal
 
-###### Day 6 — Monday, Feb 17  
+##### Day 6 — Monday, Feb 17  
 Opened Sprint 2 planning. Identified Gmsh availability as a potential blocker.
 
-###### Day 7 — Tuesday, Feb 18
+##### Day 7 — Tuesday, Feb 18
 Gmsh blocker cleared by Developer 1. Reminded team to proceed with mesh integration.
 
-###### Day 8 — Wednesday, Feb 19
+##### Day 8 — Wednesday, Feb 19
 Checked burn-down: 8/15 tasks completed — sprint on track.
 
-###### Day 9 — Thursday, Feb 20  
+##### Day 9 — Thursday, Feb 20  
 Tracked 13/15 tasks completed. Scheduled Sprint 2 review.
 
-###### Day 10 — Friday, Feb 21  
+##### Day 10 — Friday, Feb 21  
 Facilitated Sprint 2 retrospective. Noted dependency risks and team coordination improvements.
 
 ---
 
-##### Sprint 2 Reflection
+#### Sprint 2 Reflection
 
 > *Taking on the Scrum Master role after being Product Owner gave me a broader perspective on execution. Managing blockers like Gmsh taught me the importance of early risk identification.*
 
@@ -323,7 +344,7 @@ Facilitated Sprint 2 retrospective. Noted dependency risks and team coordination
 
 ---
 
-##### Sprint 2 Retrospective
+#### Sprint 2 Retrospective
 
 | Category | Notes |
 |----------|-------|
@@ -333,7 +354,7 @@ Facilitated Sprint 2 retrospective. Noted dependency risks and team coordination
 
 ---
 
-#### Sprint 3 — Frontend 3D Viewer & Interaction
+### Sprint 3 — Frontend 3D Viewer & Interaction
 
 **Duration:** Feb 23 – Feb 27, 2025  
 **My Role: Developer 1**
@@ -342,26 +363,26 @@ Facilitated Sprint 2 retrospective. Noted dependency risks and team coordination
 
 ---
 
-##### Daily Journal
+#### Daily Journal
 
-###### Day 11 — Monday, Feb 23  
+##### Day 11 — Monday, Feb 23  
 Initialized Three.js scene inside React application.
 
-###### Day 12 — Tuesday, Feb 24 
+##### Day 12 — Tuesday, Feb 24 
 Completed lighting setup (ambient + directional lighting).
 
-###### Day 13 — Wednesday, Feb 25  
+##### Day 13 — Wednesday, Feb 25  
 Converted API mesh data (nodes and triangles) into Three.js geometry.
 
-###### Day 14 — Thursday, Feb 26  
+##### Day 14 — Thursday, Feb 26  
 Built parameter input forms for box, sphere, and cylinder.
 
-###### Day 15 — Friday, Feb 27  
+##### Day 15 — Friday, Feb 27  
 Completed startup fetch for `/health` and existing geometry list.
 
 ---
 
-##### Sprint 3 Reflection
+#### Sprint 3 Reflection
 
 > *Coding as Developer 1 gave me deep appreciation for how frontend rendering depends on clean backend data structures. Converting mesh data into visuals was a key challenge.*
 
@@ -369,7 +390,7 @@ Completed startup fetch for `/health` and existing geometry list.
 
 ---
 
-##### Sprint 3 Retrospective
+#### Sprint 3 Retrospective
 
 | Category | Notes |
 |----------|-------|
@@ -379,7 +400,7 @@ Completed startup fetch for `/health` and existing geometry list.
 
 ---
 
-#### Sprint 4 — CAD/Mesh File Import & Geometry Management
+### Sprint 4 — CAD/Mesh File Import & Geometry Management
 
 **Duration:** March 1 – March 5, 2025  
 **My Role: Developer 2**
@@ -388,26 +409,26 @@ Completed startup fetch for `/health` and existing geometry list.
 
 ---
 
-##### Daily Journal
+#### Daily Journal
 
-###### Day 16 — Monday, March 1  
+##### Day 16 — Monday, March 1  
 Assigned frontend file input and upload wiring.
 
-###### Day 17 — Tuesday, March 2 
+##### Day 17 — Tuesday, March 2 
 Completed file input and wired FormData submission to backend.
 
-###### Day 18 — Wednesday, March 3  
+##### Day 18 — Wednesday, March 3  
 Uploaded CAD mesh successfully renders in 3D viewer.
 
-###### Day 19 — Thursday, March 4  
+##### Day 19 — Thursday, March 4  
 Added per-item delete buttons in sidebar geometry list.
 
-###### Day 20 — Friday, March 5  
+##### Day 20 — Friday, March 5  
 Implemented user-facing success/failure action messages.
 
 ---
 
-##### Sprint 4 Reflection
+#### Sprint 4 Reflection
 
 > *As Developer 2 in the final sprint, I handled user-facing features. Seeing file uploads and mesh rendering work end-to-end was very satisfying.*
 
@@ -415,7 +436,7 @@ Implemented user-facing success/failure action messages.
 
 ---
 
-##### Sprint 4 Retrospective
+#### Sprint 4 Retrospective
 
 | Category | Notes |
 |----------|-------|
@@ -425,7 +446,7 @@ Implemented user-facing success/failure action messages.
 
 ---
 
-#### Overall Reflection
+### Overall Reflection
 
 Across all four sprints, I transitioned through multiple roles, gaining both technical and leadership experience:
 
@@ -441,69 +462,69 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 ---
 
 
-## 3. Workflows, UML Diagram and Wireframes
-### 3.1 Workflows
-#### 3.1.1 High-Level Design Workflow (Input -> Core -> Output)
+## 4. Workflows, UML Diagram and Wireframes
+### 4.1 Workflows
+#### 4.1.1 High-Level Design Workflow (Input -> Core -> Output)
 
 ![webmsh-high-level-workflow.png](webmsh-high-level-workflow.png)
 
 ---
 
-#### 3.1.2 Detailed Workflow Diagram (Operational Flow)
+#### 4.1.2 Detailed Workflow Diagram (Operational Flow)
 
 ![webmsh-operational-workflow](webmsh-operational-workflow.png)
 
 ---
 
-### 3.2 UML Diagrams
-#### 3.2.1 Interaction Diagram
+### 4.2 UML Diagrams
+#### 4.2.1 Interaction Diagram
 
 ![webmsh-interaction-diagram.png](webmsh-interaction-diagram.png)
 
 ---
 
-#### 3.2.2 Sequence Diagram
+#### 4.2.2 Sequence Diagram
 
 ![webmsh-sequence-diagram.png](webmsh-sequence-diagram.png)
 
 ---
 
-#### 3.2.3 Activity Diagram
+#### 4.2.3 Activity Diagram
 
 ![webmsh-activity-diagram.png](webmsh-activity-diagram.png)
 
 ---
 
-#### 3.2.4 Class Diagram
+#### 4.2.4 Class Diagram
 
 ![webmsh-class-diagram.png](webmsh-class-diagram.png)
 
 ---
 
-#### 3.2.5 Use Case Diagram
+#### 4.2.5 Use Case Diagram
 
 ![webmsh-usecase-diagram.png](webmsh-usecase-diagram.png)
 
 ---
 
-### 3.3 Wireframes
-#### 3.3.1 User Authenication Wireframe
+### 4.3 Wireframes
+#### 4.3.1 User Authenication Wireframe
 ![webmsh-auth-wireframe.png](webmsh-auth-wireframe.png)
 
 ---
-#### 3.3.2 User Profile Wireframe
+#### 4.3.2 User Profile Wireframe
 ![webmsh-user-profile-wireframe.png](webmsh-user-profile-wireframe.png)
 
 ---
-### 3.3.3 Main Application Wireframe
+### 4.3.3 Main Application Wireframe
 ![webmsh-lowfi-wireframe.png](webmsh-lowfi-wireframe.png)
 
 ---
 
 
-## 4. Features and Requirements
-### 4.1 Features
-#### 4.1.1 Authentication and User Management
+## 5. Features and Requirements
+### 5.1 Features
+#### 5.1.1 Authentication and User Management
 
 | # | Feature |
 |---|---|
@@ -512,7 +533,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 3 | Sign-out and session invalidation. |
 | 4 | User profile display (name, avatar from OAuth provider). |
 
-#### 4.1.2 Project Management
+#### 5.1.2 Project Management
 
 | # | Feature |
 |---|---|
@@ -523,7 +544,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | Delete a project. |
 | 6 | Manual save via Ctrl+S or toolbar button. |
 
-#### 4.1.3 Geometry Creation
+#### 5.1.3 Geometry Creation
 
 | # | Feature | Gmsh API |
 |---|---|---|
@@ -535,7 +556,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 6 | Extrude a surface along a direction vector. | `occ.extrude()` |
 | 7 | Revolve a surface around an axis by a specified angle. | `occ.revolve()` |
 
-#### 4.1.4 Boolean Operations
+#### 5.1.4 Boolean Operations
 
 | # | Feature | Gmsh API |
 |---|---|---|
@@ -543,7 +564,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 2 | Cut (subtract) one volume from another. | `occ.cut()` |
 | 3 | Intersect two or more volumes. | `occ.intersect()` |
 
-#### 4.1.5 Geometry Transforms
+#### 5.1.5 Geometry Transforms
 
 | # | Feature | Gmsh API |
 |---|---|---|
@@ -553,14 +574,14 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 4 | Copy entities. | `occ.copy()` |
 | 5 | Delete selected entities. | `occ.remove()` |
 
-#### 4.1.6 Geometry Import
+#### 5.1.6 Geometry Import
 
 | # | Feature |
 |---|---|
 | 1 | Upload and import STEP files (.step, .stp) via file picker or drag-and-drop. |
 | 2 | Upload and import STL files (.stl) via file picker or drag-and-drop. |
 
-#### 4.1.7 Physical Groups
+#### 5.1.7 Physical Groups
 
 | # | Feature |
 |---|---|
@@ -571,7 +592,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | Delete a physical group. |
 | 6 | Color-code physical groups in the 3D viewer with distinct colors. |
 
-#### 4.1.8 Export
+#### 5.1.8 Export
 
 | # | Feature | Format |
 |---|---|---|
@@ -582,7 +603,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | Export mesh in Abaqus format. | `.inp` |
 | 6 | Export mesh in Ideas/Universal format. | `.unv` |
 
-#### 4.1.9 Workflow and UX
+#### 5.1.9 Workflow and UX
 
 | # | Feature |
 |---|---|
@@ -593,9 +614,9 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | Error notifications (toast messages) for failed operations with descriptive messages. |
 | 6 | Keyboard shortcuts: Delete (remove entity), Ctrl+Z (undo), Ctrl+Y (redo), Escape (deselect). |
 
-### 4.2 Functional Requirements
+### 5.2 Functional Requirements
 
-#### 4.2.1 Authentication
+#### 5.2.1 Authentication
 
 | # | Requirement |
 |---|---|
@@ -605,7 +626,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 4 | The system shall reject API requests with expired or invalid JWT tokens with HTTP 401. |
 | 5 | The system shall store user records (OAuth provider ID, display name, email, avatar URL) in the database upon first sign-in. |
 
-#### 4.2.2 Gmsh Session Management
+#### 5.2.2 Gmsh Session Management
 
 | # | Requirement |
 |---|---|
@@ -615,7 +636,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 4 | The system shall limit the maximum number of concurrent Gmsh sessions based on server configuration (default: 20). |
 | 5 | If maximum sessions are reached, new session requests shall receive HTTP 503 with a "server at capacity" message. |
 
-#### 4.2.3 Geometry Operations
+#### 5.2.3 Geometry Operations
 
 | # | Requirement |
 |---|---|
@@ -624,7 +645,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 3 | If a geometry operation fails, the system shall return a descriptive error and leave the model state unchanged. |
 | 4 | File import shall accept STEP and STL uploads (max 50 MB) and merge them into the current model. |
 
-#### 4.2.4 Mesh Operations
+#### 5.2.4 Mesh Operations
 
 | # | Requirement |
 |---|---|
@@ -633,7 +654,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 3 | Mesh export shall return the file as a downloadable stream in the selected format. |
 | 4 | If mesh generation fails, the system shall return a descriptive error message. |
 
-#### 4.2.5 Physical Groups
+#### 5.2.5 Physical Groups
 
 | # | Requirement |
 |---|---|
@@ -641,9 +662,9 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 2 | The system shall assign a unique color to each physical group automatically. Colors shall be distinct and visually differentiable (up to 12 groups; beyond 12, colors may repeat). |
 | 3 | The system shall return entity-to-physical-group mappings so the frontend can apply per-face coloring. |
 
-### 4.3 External Interface Requirements
+### 5.3 External Interface Requirements
 
-#### 4.3.1 User Interface
+#### 5.3.1 User Interface
 
 | # | Requirement |
 |---|---|
@@ -654,7 +675,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | The sign-in page shall display the application name, a brief description, and an OAuth sign-in button. |
 | 6 | The project dashboard shall display projects as cards with name, last-modified timestamp, and a thumbnail preview. |
 
-#### 4.3.2 Backend API
+#### 5.3.2 Backend API
 
 | # | Requirement |
 |---|---|
@@ -664,7 +685,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 4 | The API shall provide OpenAPI 3.0 documentation at `/docs` (auto-generated by FastAPI). |
 | 5 | A WebSocket endpoint (`/ws/session/{session_id}`) shall be available for real-time progress updates during long-running operations (mesh generation). |
 
-#### 4.3.3 External Systems
+#### 5.3.3 External Systems
 
 | # | Requirement |
 |---|---|
@@ -672,9 +693,9 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 2 | The system shall use PostgreSQL (production) or SQLite (development) for persistent storage of user accounts and project metadata. |
 | 3 | The system shall use the server filesystem for storing project geometry files (BREP) and exported meshes. |
 
-### 4.4 Non-Functional Requirements
+### 5.4 Non-Functional Requirements
 
-#### 4.4.1 Security
+#### 5.4.1 Security
 
 | # | Requirement |
 |---|---|
@@ -685,7 +706,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 5 | Server-side Gmsh processes shall not have network access or filesystem access beyond their designated project directory. |
 | 6 | The API shall enforce rate limiting: maximum **100 requests per minute** per authenticated user. |
 
-#### 4.4.2 Reliability
+#### 5.4.2 Reliability
 
 | # | Requirement |
 |---|---|
@@ -693,7 +714,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 2 | The system shall gracefully handle browser disconnection: the Gmsh session persists for 30 minutes, and the user can reconnect and resume. |
 
 
-### 4.5 Assumptions and Dependencies
+### 5.5 Assumptions and Dependencies
 
 | # | Assumption / Dependency |
 |---|---|
@@ -706,9 +727,9 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | 7 | Server deployment infrastructure supports **Docker** and provides at least 2 GB RAM per concurrent user session. |
 | 8 | Project geometry state can be reliably serialized to and deserialized from BREP format + JSON metadata. |
 
-### 4.6 Languages and Tools Used
+### 5.6 Languages and Tools Used
 
-#### 4.6.1 Backend
+#### 5.6.1 Backend
 
 | Tool / Language | Purpose |
 |---|---|
@@ -720,7 +741,7 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | **Gmsh Python API** | Geometry creation, mesh generation, CAD operations |
 | **OpenCASCADE** | CAD kernel bundled with Gmsh for geometry processing |
 
-#### 4.6.2 Frontend
+#### 5.6.2 Frontend
 
 | Tool / Language | Purpose |
 |---|---|
@@ -731,14 +752,14 @@ This rotation helped me understand the full lifecycle of a Scrum project—from 
 | **ESLint** | Code quality and linting |
 | **TypeScript** | Type definitions for IDE support |
 
-#### 4.6.3 Database
+#### 5.6.3 Database
 
 | Tool | Purpose |
 |---|---|
 | **PostgreSQL** | Production database for user accounts and project metadata |
 | **SQLite** | Development database |
 
-#### 4.6.4 Auth and Communication
+#### 5.6.4 Auth and Communication
 
 | Tool | Purpose |
 |---|---|
