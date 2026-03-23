@@ -131,6 +131,13 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 | 12 | Add CORS middleware for frontend-backend communication. | 2 |
 | 13 | Verify local development connectivity between frontend and backend. | 3 |
 | 14 | Define system scope, constraints, and initial feature requirements. | 3 |
+---
+
+**Sprint 1 Burndown Chart**
+
+![webmsh-sprint-1](webmsh-sprint-1.jpeg)
+
+---
 
 #### Sprint 2: Primitive Geometry Creation and Mesh Generation — Total SP: 65
 
@@ -151,6 +158,13 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 | 13 | Store generated geometry in an in-memory list. | 2 |
 | 14 | Implement `/geometry` GET endpoint to list all geometry objects. | 2 |
 | 15 | Test that primitive creation returns valid node and triangle data. | 5 |
+---
+
+**Sprint 2 Burndown Chart**
+
+![webmsh-sprint-2](webmsh-sprint-2.jpeg)
+
+---
 
 #### Sprint 3: Frontend 3D Viewer and Interaction — Total SP: 58
 
@@ -176,6 +190,13 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 | 18 | Load health, system info, and existing geometry on app startup. | 3 |
 | 19 | Display backend status and geometry count in the sidebar. | 2 |
 | 20 | Add sidebar collapse and expand behavior. | 3 |
+---
+
+**Sprint 3 Burndown Chart**
+
+![webmsh-sprint-3](webmsh-sprint-3.jpeg)
+
+---
 
 #### Sprint 4: CAD/Mesh File Import and Geometry Management — Total SP: 56
 
@@ -198,6 +219,11 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 | 15 | Add delete buttons for each geometry entry in the sidebar. | 2 |
 | 16 | Refresh geometry state after create, upload, and delete operations. | 3 |
 | 17 | Add user-facing action messages for success and failure cases. | 2 |
+---
+
+**Sprint 4 Burndown Chart**
+
+![webmsh-sprint-4](webmsh-sprint-4.jpeg)
 
 **Grand Total: 202 Story Points**
 
