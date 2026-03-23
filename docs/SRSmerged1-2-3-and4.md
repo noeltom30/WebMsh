@@ -15,11 +15,10 @@
 |---|---|
 | Irfanul Haque Raque  | Dr. Nandu C Nair  |
 | BL.EN.U4CSE23070  | Department of CSE|
-| B.Tech CSE, 5th Semester  | 
+| B.Tech, 6th Semester  | 
 | Department of CSE |  |
 
 
-### March 23, 2026
 
 <div style="page-break-after: always;"></div>
 
