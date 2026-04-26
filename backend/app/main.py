@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import uvicorn
@@ -10,6 +10,11 @@ try:
     import gmsh  # type: ignore
 except ImportError:
     gmsh = None
+
+try:
+    from .auth import AuthUser, get_current_user, init_auth_db, router as auth_router
+except ImportError:
+    from auth import AuthUser, get_current_user, init_auth_db, router as auth_router
 
 
 app = FastAPI(title="WebMsh API", version="0.1.0")
@@ -22,6 +27,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+async def on_startup():
+    init_auth_db()
 
 
 class BoxRequest(BaseModel):
@@ -67,7 +78,15 @@ class Geometry(BaseModel):
     mesh: Mesh | None = None
 
 
-_geometries: list[Geometry] = []
+_geometries_by_user: dict[int, list[Geometry]] = {}
+
+
+def _get_geometry_store(user_id: int) -> list[Geometry]:
+    return _geometries_by_user.setdefault(user_id, [])
+
+
+def _next_geom_id(items: list[Geometry]) -> int:
+    return max((g.id for g in items), default=0) + 1
 
 
 @app.get("/", tags=["system"])
@@ -81,64 +100,69 @@ async def health():
 
 
 @app.get("/info", tags=["system"])
-async def info():
+async def info(current_user: AuthUser = Depends(get_current_user)):
+    user_geometries = _get_geometry_store(current_user.id)
     return {
         "name": "WebMsh",
         "version": "0.1.0",
         "gmsh_available": _gmsh_available(),
-        "geometry_count": len(_geometries),
+        "geometry_count": len(user_geometries),
     }
 
 
 @app.get("/geometry", tags=["geometry"])
-async def list_geometry():
-    return _geometries
+async def list_geometry(current_user: AuthUser = Depends(get_current_user)):
+    return _get_geometry_store(current_user.id)
 
 
 @app.delete("/geometry/{geom_id}", tags=["geometry"], response_model=Geometry)
-async def delete_geometry(geom_id: int):
-    for idx, geom in enumerate(_geometries):
+async def delete_geometry(geom_id: int, current_user: AuthUser = Depends(get_current_user)):
+    user_geometries = _get_geometry_store(current_user.id)
+    for idx, geom in enumerate(user_geometries):
         if geom.id == geom_id:
-            return _geometries.pop(idx)
+            return user_geometries.pop(idx)
     raise HTTPException(status_code=404, detail="Geometry not found")
 
 
 @app.post("/geometry/box", tags=["geometry"], response_model=Geometry)
-async def create_box(body: BoxRequest):
+async def create_box(body: BoxRequest, current_user: AuthUser = Depends(get_current_user)):
     if not _gmsh_available():
         raise HTTPException(status_code=503, detail="gmsh is not available on the server")
 
     mesh = _build_box_mesh(body.width, body.depth, body.height, body.origin_x, body.origin_y, body.origin_z)
 
-    new_id = len(_geometries) + 1
+    user_geometries = _get_geometry_store(current_user.id)
+    new_id = _next_geom_id(user_geometries)
     geom = Geometry(id=new_id, type="box", params=body.model_dump(), mesh=mesh)
-    _geometries.append(geom)
+    user_geometries.append(geom)
     return geom
 
 
 @app.post("/geometry/sphere", tags=["geometry"], response_model=Geometry)
-async def create_sphere(body: SphereRequest):
+async def create_sphere(body: SphereRequest, current_user: AuthUser = Depends(get_current_user)):
     if not _gmsh_available():
         raise HTTPException(status_code=503, detail="gmsh is not available on the server")
 
     mesh = _build_sphere_mesh(body.radius, body.center_x, body.center_y, body.center_z)
 
-    new_id = len(_geometries) + 1
+    user_geometries = _get_geometry_store(current_user.id)
+    new_id = _next_geom_id(user_geometries)
     geom = Geometry(id=new_id, type="sphere", params=body.model_dump(), mesh=mesh)
-    _geometries.append(geom)
+    user_geometries.append(geom)
     return geom
 
 
 @app.post("/geometry/cylinder", tags=["geometry"], response_model=Geometry)
-async def create_cylinder(body: CylinderRequest):
+async def create_cylinder(body: CylinderRequest, current_user: AuthUser = Depends(get_current_user)):
     if not _gmsh_available():
         raise HTTPException(status_code=503, detail="gmsh is not available on the server")
 
     mesh = _build_cylinder_mesh(body.radius, body.height, body.base_x, body.base_y, body.base_z)
 
-    new_id = len(_geometries) + 1
+    user_geometries = _get_geometry_store(current_user.id)
+    new_id = _next_geom_id(user_geometries)
     geom = Geometry(id=new_id, type="cylinder", params=body.model_dump(), mesh=mesh)
-    _geometries.append(geom)
+    user_geometries.append(geom)
     return geom
 
 
@@ -147,7 +171,7 @@ def _gmsh_available():
 
 
 @app.post("/geometry/upload", tags=["geometry"], response_model=Geometry)
-async def upload_cad(file: UploadFile = File(...)):
+async def upload_cad(file: UploadFile = File(...), current_user: AuthUser = Depends(get_current_user)):
     if not _gmsh_available():
         raise HTTPException(status_code=503, detail="gmsh is not available on the server")
 
@@ -180,9 +204,10 @@ async def upload_cad(file: UploadFile = File(...)):
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    new_id = len(_geometries) + 1
+    user_geometries = _get_geometry_store(current_user.id)
+    new_id = _next_geom_id(user_geometries)
     geom = Geometry(id=new_id, type="cad", params={"filename": filename, "ext": ext}, mesh=mesh)
-    _geometries.append(geom)
+    user_geometries.append(geom)
     return geom
 
 
