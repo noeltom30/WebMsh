@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMsh Product Vision Board</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --panel: #ffffff;
+      --line: #1f2937;
+      --text: #111827;
+      --muted: #4b5563;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 20px auto;
+      padding: 0 12px 20px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .canvas {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .vision {
+      grid-column: 1 / -1;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+      min-height: 190px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 14px;
+      min-height: 360px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 26px;
+      letter-spacing: 0.3px;
+      font-weight: 700;
+    }
+
+    .card-title {
+      margin: 0 0 12px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .prompt {
+      margin: 0 0 6px;
+      font-size: 16px;
+      line-height: 1.45;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .answer {
+      margin: 0 0 14px;
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 1100px) {
+      .canvas {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .card { min-height: 320px; }
+    }
+
+    @media (max-width: 700px) {
+      .canvas {
+        grid-template-columns: 1fr;
+      }
+      .section-title {
+        font-size: 22px;
+      }
+      .card-title {
+        font-size: 20px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+      .page {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+      .canvas {
+        gap: 8px;
+      }
+      .vision,
+      .card {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>WebMsh Product Vision Board</h1>
+
+    <section class="canvas" aria-label="Product Vision Board Canvas">
+      <article class="vision">
+        <h2 class="section-title">VISION</h2>
+        <p class="prompt">What is your purpose for creating the product?</p>
+        <p class="answer">To make high-quality CAD-to-mesh workflows accessible from any modern browser, so users can create, inspect, and export simulation-ready meshes without desktop installation complexity.</p>
+
+        <p class="prompt">What positive change should it bring about?</p>
+        <p class="answer">Reduce setup friction for students, researchers, and engineers; shorten time from geometry idea to solver-ready mesh; improve confidence through interactive 3D validation and clear error feedback; democratize meshing workflows for learning and prototyping.</p>
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Target group</h3>
+        <p class="prompt">Which market or market segments does the product address?</p>
+        <p class="answer">Engineering education, academic research groups, small-to-mid engineering teams, and 3D printing/prototyping users.</p>
+
+        <p class="prompt">Who are the target customers and users?</p>
+        <p class="answer">Engineering students, researchers, CFD/FEA engineers, instructors, lab admins, and technical leads.</p>
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Needs</h3>
+        <p class="prompt">What problem does the product solve?</p>
+        <p class="answer">Complex local setup, fragmented CAD-to-mesh workflows, steep onboarding, and poor error visibility.</p>
+
+        <p class="prompt">Which benefit does it provide?</p>
+        <p class="answer">Zero-install browser workflow, unified geometry-mesh-export process, faster learning curve, and clear operational feedback.</p>
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Product</h3>
+        <p class="prompt">What product is it?</p>
+        <p class="answer">WebMsh is a web-based mesh generation platform powered by FastAPI + Gmsh and React + Three.js for geometry creation/import, meshing, 3D inspection, and multi-format export.</p>
+
+        <p class="prompt">What makes it stand out?</p>
+        <p class="answer">Browser-first access, integrated visual workflow, and interoperability for simulation toolchains.</p>
+
+        <p class="prompt">Is it feasible to develop this product?</p>
+        <p class="answer">Yes. MVP feasibility is already proven with working geometry creation, file upload, meshing, rendering, and geometry management flows.</p>
+      </article>
+
+      <article class="card">
+        <h3 class="card-title">Business goals</h3>
+        <p class="prompt">How is the product going to benefit the organization?</p>
+        <p class="answer">Expands adoption among users who avoid heavy desktop tooling, strengthens education/research reach, and creates a base for advanced capabilities.</p>
+
+        <p class="prompt">What are the business goals?</p>
+        <p class="answer">Improve activation, increase retention, maintain high reliability, drive recurring usage, and ensure high import/export success rates.</p>
+      </article>
+    </section>
+
+    <p class="footer-note">Prepared for WebMsh SRS section: Product Vision Board.</p>
+  </main>
+</body>
+</html>
