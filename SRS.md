@@ -398,7 +398,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 | 2 | Auto-save shall ensure that no more than **30 seconds** of work is lost in the event of a server crash or browser close. |
 | 3 | The system shall gracefully handle browser disconnection: the Gmsh session persists for 30 minutes, and the user can reconnect and resume. |
 
-<!-- #### 3.4.3 Availability
+#### 3.4.3 Availability
 
 | # | Requirement |
 |---|---|
@@ -420,7 +420,7 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 |---|---|
 | 1 | The frontend shall support the latest two major versions of Chrome, Firefox, Edge, and Safari. |
 | 2 | The frontend requires WebGL 2.0. Browsers without WebGL 2.0 shall display an unsupported-browser message. |
-| 3 | The backend shall run on Linux x86_64 (primary deployment target). Local development shall also work on Windows and macOS. | -->
+| 3 | The backend shall run on Linux x86_64 (primary deployment target). Local development shall also work on Windows and macOS. | 
 
 ---
 
@@ -462,11 +462,3 @@ WebMsh is a **server-side Gmsh instance with a web frontend**. The Python backen
 
 - One Gmsh subprocess per active user session (thread-safety); subprocess lifecycle managed per operation; no persistent model state between requests.
 - Planned: Idle session timeout, max concurrent session limit, graceful session reconnection.
-
-**Deployment & Security**
-
-- **Containerization**: Docker for containerized deployment with dependency manifest.
-- **Network**: TLS termination at reverse proxy (planned); encrypted communication (HTTPS/WSS) for production.
-- **File Security**: Uploaded file validation by extension whitelist; temporary storage in isolated directory; automatic cleanup on error or timeout.
-- **Authentication**: Planned OAuth 2.0 (Google, GitHub) with JWT tokens (separate access and refresh lifetimes) in HTTP-only, Secure, SameSite cookies.
-- **Rate Limiting**: Planned per-user request throttling at API middleware.

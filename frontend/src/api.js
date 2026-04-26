@@ -1,10 +1,82 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+const SESSION_TOKEN_KEY = 'webmsh.sessionToken'
 
-async function request(path, options = {}) {
+let cachedToken = null
+let tokenRequest = null
+
+function readStoredToken() {
+  try {
+    return window.localStorage.getItem(SESSION_TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeStoredToken(token) {
+  try {
+    window.localStorage.setItem(SESSION_TOKEN_KEY, token)
+  } catch {
+    // Ignore storage failures in private-mode/restricted contexts.
+  }
+}
+
+async function createSessionToken() {
+  const res = await fetch(`${API_BASE}/auth/session`, { method: 'POST' })
+  const text = await res.text()
+  let data
+  try {
+    data = text ? JSON.parse(text) : null
+  } catch {
+    data = text
+  }
+
+  if (!res.ok || !data?.access_token) {
+    const error = new Error(`Session creation failed: ${res.status}`)
+    error.status = res.status
+    error.body = data
+    throw error
+  }
+
+  return data.access_token
+}
+
+async function ensureSessionToken(forceRefresh = false) {
+  if (forceRefresh) {
+    cachedToken = null
+  }
+
+  if (!cachedToken) {
+    cachedToken = readStoredToken()
+  }
+  if (cachedToken && !forceRefresh) {
+    return cachedToken
+  }
+
+  if (!tokenRequest) {
+    tokenRequest = createSessionToken()
+      .then((token) => {
+        cachedToken = token
+        writeStoredToken(token)
+        return token
+      })
+      .finally(() => {
+        tokenRequest = null
+      })
+  }
+
+  return tokenRequest
+}
+
+async function request(path, options = {}, retriedAfterAuth = false) {
   const isFormData = options.body instanceof FormData
   const headers = isFormData
-    ? (options.headers || {})
+    ? { ...(options.headers || {}) }
     : { 'Content-Type': 'application/json', ...(options.headers || {}) }
+
+  if (path !== '/auth/session') {
+    const token = await ensureSessionToken(false)
+    headers.Authorization = `Bearer ${token}`
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     headers,
@@ -14,15 +86,22 @@ async function request(path, options = {}) {
   let data
   try {
     data = text ? JSON.parse(text) : null
-  } catch (e) {
+  } catch {
     data = text
   }
+
+  if (res.status === 401 && path !== '/auth/session' && !retriedAfterAuth) {
+    await ensureSessionToken(true)
+    return request(path, options, true)
+  }
+
   if (!res.ok) {
     const error = new Error(`Request failed: ${res.status}`)
     error.status = res.status
     error.body = data
     throw error
   }
+
   return data
 }
 
@@ -34,6 +113,7 @@ export const api = {
   createSphere: (body) => request('/geometry/sphere', { method: 'POST', body: JSON.stringify(body) }),
   createCylinder: (body) => request('/geometry/cylinder', { method: 'POST', body: JSON.stringify(body) }),
   createBoolean: (body) => request('/geometry/boolean', { method: 'POST', body: JSON.stringify(body) }),
+  generateMesh: (body) => request('/mesh/generate', { method: 'POST', body: JSON.stringify(body) }),
   deleteGeometry: (id) => request(`/geometry/${id}`, { method: 'DELETE' }),
   uploadCAD: (file) => {
     const form = new FormData()

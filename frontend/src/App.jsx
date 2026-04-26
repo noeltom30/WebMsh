@@ -3,11 +3,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { api } from "./api";
 import "./index.css";
-import { div } from "three/src/nodes/math/OperatorNode.js";
 
 function App() {
   const mountRef = useRef(null);
-  const sceneRef = useRef(null);
   const geomGroupRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
   const [health, setHealth] = useState(null);
@@ -39,10 +37,20 @@ function App() {
   const [booleanOp, setBooleanOp] = useState("fuse");
   const [booleanLeft, setBooleanLeft] = useState("");
   const [booleanRight, setBooleanRight] = useState("");
+  const [meshDimension, setMeshDimension] = useState("2");
+  const [meshTarget, setMeshTarget] = useState("all");
 
   const booleanCandidates = geoms.filter((g) =>
     ["box", "sphere", "cylinder"].includes(g.type),
   );
+  const remeshCandidates = geoms.filter((g) =>
+    ["box", "sphere", "cylinder", "boolean"].includes(g.type),
+  );
+  const resolvedMeshTarget =
+    meshTarget === "all" ||
+    remeshCandidates.some((g) => String(g.id) === meshTarget)
+      ? meshTarget
+      : "all";
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -78,8 +86,6 @@ function App() {
     const geomGroup = new THREE.Group();
     scene.add(geomGroup);
     geomGroupRef.current = geomGroup;
-
-    sceneRef.current = scene;
 
     const resize = () => {
       const { clientWidth: w, clientHeight: h } = mount;
@@ -130,7 +136,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Simple sync: rebuild meshes from geometry list (boxes only for now).
+    // Rebuild rendered geometry from latest backend mesh payloads.
     const group = geomGroupRef.current;
     if (!group) return;
 
@@ -141,8 +147,8 @@ function App() {
     });
     group.clear();
 
-    const buildMeshFromGmsh = (meshData) => {
-      if (!meshData?.nodes?.length || !meshData?.triangles?.length) return null;
+    const buildRenderableFromGmsh = (meshData) => {
+      if (!meshData?.nodes?.length) return null;
 
       const positions = new Float32Array(meshData.nodes.length * 3);
       const nodeIndex = new Map();
@@ -154,8 +160,38 @@ function App() {
         nodeIndex.set(n.id, idx);
       });
 
+      const lines = meshData?.lines || [];
+      const triangles = meshData?.triangles || [];
+
+      if (lines.length && (!triangles.length || Number(meshData.dimension) === 1)) {
+        const linePositions = [];
+        lines.forEach((line) => {
+          const a = nodeIndex.get(line[0]);
+          const b = nodeIndex.get(line[1]);
+          if (a === undefined || b === undefined) return;
+
+          linePositions.push(
+            positions[3 * a],
+            positions[3 * a + 1],
+            positions[3 * a + 2],
+            positions[3 * b],
+            positions[3 * b + 1],
+            positions[3 * b + 2],
+          );
+        });
+
+        if (!linePositions.length) return null;
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(linePositions, 3),
+        );
+        return { kind: "lines", geometry };
+      }
+
       const indices = [];
-      meshData.triangles.forEach((tri) => {
+      triangles.forEach((tri) => {
         const a = nodeIndex.get(tri[0]);
         const b = nodeIndex.get(tri[1]);
         const c = nodeIndex.get(tri[2]);
@@ -172,11 +208,11 @@ function App() {
       );
       geometry.setIndex(indices);
       geometry.computeVertexNormals();
-      return geometry;
+      return { kind: "surface", geometry };
     };
 
     geoms.forEach((g) => {
-      const gmshGeo = buildMeshFromGmsh(g.mesh);
+      const gmshRenderable = buildRenderableFromGmsh(g.mesh);
 
       if (g.type === "box") {
         const w = Number(g?.params?.width) || 1;
@@ -186,11 +222,22 @@ function App() {
         const oy = Number(g?.params?.origin_y) || 0;
         const oz = Number(g?.params?.origin_z) || 0;
 
-        const geo = gmshGeo || new THREE.BoxGeometry(w, h, d);
-        const edges = new THREE.EdgesGeometry(geo);
         const lineMat = new THREE.LineBasicMaterial({ color: 0x4b8fea });
+        if (gmshRenderable?.kind === "lines") {
+          group.add(new THREE.LineSegments(gmshRenderable.geometry, lineMat));
+          return;
+        }
+
+        if (gmshRenderable?.kind === "surface") {
+          const wireframe = new THREE.WireframeGeometry(gmshRenderable.geometry);
+          group.add(new THREE.LineSegments(wireframe, lineMat));
+          return;
+        }
+
+        const geo = new THREE.BoxGeometry(w, h, d);
+        const edges = new THREE.EdgesGeometry(geo);
         const wire = new THREE.LineSegments(edges, lineMat);
-        if (!gmshGeo) wire.position.set(ox + w / 2, oz + h / 2, oy + d / 2);
+        wire.position.set(ox + w / 2, oz + h / 2, oy + d / 2);
         group.add(wire);
         return;
       }
@@ -201,11 +248,22 @@ function App() {
         const cy = Number(g?.params?.center_y) || 0;
         const cz = Number(g?.params?.center_z) || 0;
 
-        const geo = gmshGeo || new THREE.SphereGeometry(r, 24, 16);
-        const edges = new THREE.EdgesGeometry(geo);
         const lineMat = new THREE.LineBasicMaterial({ color: 0xf5c542 });
+        if (gmshRenderable?.kind === "lines") {
+          group.add(new THREE.LineSegments(gmshRenderable.geometry, lineMat));
+          return;
+        }
+
+        if (gmshRenderable?.kind === "surface") {
+          const wireframe = new THREE.WireframeGeometry(gmshRenderable.geometry);
+          group.add(new THREE.LineSegments(wireframe, lineMat));
+          return;
+        }
+
+        const geo = new THREE.SphereGeometry(r, 24, 16);
+        const edges = new THREE.EdgesGeometry(geo);
         const wire = new THREE.LineSegments(edges, lineMat);
-        if (!gmshGeo) wire.position.set(cx, cz, cy);
+        wire.position.set(cx, cz, cy);
         group.add(wire);
         return;
       }
@@ -217,37 +275,64 @@ function App() {
         const by = Number(g?.params?.base_y) || 0;
         const bz = Number(g?.params?.base_z) || 0;
 
-        const geo = gmshGeo || new THREE.CylinderGeometry(r, r, h, 24, 1);
-        const edges = new THREE.EdgesGeometry(geo);
         const lineMat = new THREE.LineBasicMaterial({ color: 0x5ad35a });
+        if (gmshRenderable?.kind === "lines") {
+          group.add(new THREE.LineSegments(gmshRenderable.geometry, lineMat));
+          return;
+        }
+
+        if (gmshRenderable?.kind === "surface") {
+          const wireframe = new THREE.WireframeGeometry(gmshRenderable.geometry);
+          group.add(new THREE.LineSegments(wireframe, lineMat));
+          return;
+        }
+
+        const geo = new THREE.CylinderGeometry(r, r, h, 24, 1);
+        const edges = new THREE.EdgesGeometry(geo);
         const wire = new THREE.LineSegments(edges, lineMat);
-        if (!gmshGeo) wire.position.set(bx, bz + h / 2, by);
+        wire.position.set(bx, bz + h / 2, by);
         group.add(wire);
         return;
       }
 
       if (g.type === "cad") {
-        if (!gmshGeo) return;
+        if (!gmshRenderable) return;
+        if (gmshRenderable.kind === "lines") {
+          const line = new THREE.LineSegments(
+            gmshRenderable.geometry,
+            new THREE.LineBasicMaterial({ color: 0x7ad4ff }),
+          );
+          group.add(line);
+          return;
+        }
         const mat = new THREE.MeshStandardMaterial({
           color: 0x7ad4ff,
           wireframe: true,
           transparent: true,
           opacity: 0.7,
         });
-        const mesh = new THREE.Mesh(gmshGeo, mat);
+        const mesh = new THREE.Mesh(gmshRenderable.geometry, mat);
         group.add(mesh);
         return;
       }
 
       if (g.type === "boolean") {
-        if (!gmshGeo) return;
+        if (!gmshRenderable) return;
+        if (gmshRenderable.kind === "lines") {
+          const line = new THREE.LineSegments(
+            gmshRenderable.geometry,
+            new THREE.LineBasicMaterial({ color: 0xf08bd2 }),
+          );
+          group.add(line);
+          return;
+        }
         const mat = new THREE.MeshStandardMaterial({
           color: 0xf08bd2,
           wireframe: true,
           transparent: true,
           opacity: 0.7,
         });
-        const mesh = new THREE.Mesh(gmshGeo, mat);
+        const mesh = new THREE.Mesh(gmshRenderable.geometry, mat);
         group.add(mesh);
       }
     });
@@ -306,7 +391,7 @@ function App() {
 
   const handleCadUpload = async () => {
     if (!cadFile) {
-      setLastAction("Choose a STEP/IGES/BREP/STL file first");
+      setLastAction("Choose a STEP/IGES/BREP/STL/VTK/MSH file first");
       return;
     }
     try {
@@ -354,6 +439,33 @@ function App() {
     }
   };
 
+  const handleGenerateMesh = async () => {
+    if (!remeshCandidates.length) {
+      setLastAction("Create a primitive or boolean geometry before generating a mesh");
+      return;
+    }
+
+    try {
+      const body = {
+        dimension: Number(meshDimension),
+        ...(resolvedMeshTarget !== "all"
+          ? { geometry_ids: [Number(resolvedMeshTarget)] }
+          : {}),
+      };
+      const response = await api.generateMesh(body);
+      setGeoms(response.geometries);
+      const scope =
+        resolvedMeshTarget === "all"
+          ? "geometries"
+          : `geometry ${resolvedMeshTarget}`;
+      setLastAction(
+        `Generated ${response.dimension}D mesh for ${response.updated_ids.length} ${scope}`,
+      );
+    } catch (err) {
+      setLastAction(err.body?.detail || "Failed to generate mesh");
+    }
+  };
+
   const refreshInfo = async () => {
     const [h, i, g] = await Promise.all([
       api.health(),
@@ -370,7 +482,7 @@ function App() {
     <div className="layout">
       <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
         <div className="sidebar-header">
-          <span className="sidebar-title"></span>
+          <span className="sidebar-title">WebMsh</span>
           <button
             className="collapse-btn"
             aria-label="Toggle sidebar"
@@ -638,11 +750,37 @@ function App() {
             </div>
 
             <div className="sidebar-section">Mesh</div>
-            <ul className="sidebar-list">
-              <li>Generate 1D / 2D / 3D</li>
-              <li>Algorithms & sizing</li>
-              <li>Export .msh / .stl / .vtk</li>
-            </ul>
+            <div className="card">
+              <div className="field-row">
+                <label>Dimension</label>
+                <select
+                  value={meshDimension}
+                  onChange={(e) => setMeshDimension(e.target.value)}
+                >
+                  <option value="1">1D (curves)</option>
+                  <option value="2">2D (surfaces)</option>
+                  <option value="3">3D (volumes)</option>
+                </select>
+              </div>
+              <div className="field-row">
+                <label>Target</label>
+                <select
+                  value={resolvedMeshTarget}
+                  onChange={(e) => setMeshTarget(e.target.value)}
+                >
+                  <option value="all">All supported geometries</option>
+                  {remeshCandidates.map((g) => (
+                    <option key={g.id} value={g.id}>{`${g.type} #${g.id}`}</option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn" onClick={handleGenerateMesh}>
+                Generate Mesh
+              </button>
+              <div className="note" style={{ marginTop: "8px" }}>
+                Remeshing currently supports boxes, spheres, cylinders, and boolean results.
+              </div>
+            </div>
 
             <div className="sidebar-section">Status</div>
             <div className="card">
@@ -674,15 +812,15 @@ function App() {
                 <div className="sidebar-section">Geometry List</div>
                 <ul className="sidebar-list compact">
                   {geoms.map((g) => (
-                    <div className="geometry-entry">
-                      <li key={g.id}>
+                    <div className="geometry-entry" key={g.id}>
+                      <li>
                         <span className="geom-title">
                           {g.type} #{g.id}
                         </span>
                         <div className="geom-params">
                           {Object.entries(g.params).map(([key, val]) => (
-                            <div className="geom-param-border">
-                              <span className="geom-param" key={key}>
+                            <div className="geom-param-border" key={key}>
+                              <span className="geom-param">
                                 <span className="geom-param-key">{key}</span>
                                 <span className="geom-param-val">{val}</span>
                               </span>
@@ -712,7 +850,7 @@ function App() {
             Orbit: drag • Pan: right-drag • Zoom: scroll
           </div>
           <div className="hud-row">
-            3D workspace ready; wiring to commands comes next.
+            Shapes, booleans, and CAD imports render from backend gmsh meshes.
           </div>
         </div>
       </div>

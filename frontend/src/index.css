@@ -176,6 +176,16 @@ body {
   color: #dbe1ff;
 }
 
+.field-row select {
+  min-width: 150px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0b0f18;
+  color: #dbe1ff;
+}
+
 .file-row {
   grid-template-columns: 1fr auto;
 }
