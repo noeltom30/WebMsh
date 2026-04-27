@@ -1,18 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { api } from './api'
 import './index.css'
 
-function Workspace({ user, onUserUpdate, onLogout }) {
+function Workspace({ projectId, user, onLogout }) {
+  const navigate = useNavigate()
   const mountRef = useRef(null)
-  const sceneRef = useRef(null)
   const geomGroupRef = useRef(null)
+
   const [collapsed, setCollapsed] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [health, setHealth] = useState(null)
   const [info, setInfo] = useState(null)
+  const [project, setProject] = useState(null)
   const [geoms, setGeoms] = useState([])
   const [lastAction, setLastAction] = useState('')
+
   const [boxParams, setBoxParams] = useState({
     width: 1.2,
     height: 1.2,
@@ -24,9 +29,8 @@ function Workspace({ user, onUserUpdate, onLogout }) {
   const [sphereParams, setSphereParams] = useState({ radius: 0.8, center_x: '0', center_y: '0', center_z: '0' })
   const [cylParams, setCylParams] = useState({ radius: 0.6, height: 1.5, base_x: '0', base_y: '0', base_z: '0' })
   const [cadFile, setCadFile] = useState(null)
-  const [twoFASetup, setTwoFASetup] = useState(null)
-  const [twoFACode, setTwoFACode] = useState('')
-  const [twoFABusy, setTwoFABusy] = useState(false)
+
+  const numericProjectId = Number(projectId)
 
   useEffect(() => {
     const mount = mountRef.current
@@ -48,28 +52,24 @@ function Workspace({ user, onUserUpdate, onLogout }) {
     controls.enableDamping = true
     controls.dampingFactor = 0.08
 
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6)
-    scene.add(ambient)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+
     const dir = new THREE.DirectionalLight(0xffffff, 0.8)
     dir.position.set(5, 8, 4)
     scene.add(dir)
 
-    const grid = new THREE.GridHelper(10, 20, 0x2c3140, 0x1c202b)
-    scene.add(grid)
-    const axes = new THREE.AxesHelper(1.25)
-    scene.add(axes)
+    scene.add(new THREE.GridHelper(10, 20, 0x2c3140, 0x1c202b))
+    scene.add(new THREE.AxesHelper(1.25))
 
     const geomGroup = new THREE.Group()
     scene.add(geomGroup)
     geomGroupRef.current = geomGroup
 
-    sceneRef.current = scene
-
     const resize = () => {
-      const { clientWidth: w, clientHeight: h } = mount
-      camera.aspect = w / h
+      const { clientWidth: nextWidth, clientHeight: nextHeight } = mount
+      camera.aspect = nextWidth / nextHeight
       camera.updateProjectionMatrix()
-      renderer.setSize(w, h)
+      renderer.setSize(nextWidth, nextHeight)
     }
     window.addEventListener('resize', resize)
 
@@ -87,10 +87,10 @@ function Workspace({ user, onUserUpdate, onLogout }) {
       controls.dispose()
       renderer.dispose()
       mount.removeChild(renderer.domElement)
-      scene.traverse(obj => {
+      scene.traverse((obj) => {
         if (obj.geometry) obj.geometry.dispose()
         if (obj.material) {
-          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose())
+          if (Array.isArray(obj.material)) obj.material.forEach((material) => material.dispose())
           else obj.material.dispose()
         }
       })
@@ -98,32 +98,20 @@ function Workspace({ user, onUserUpdate, onLogout }) {
   }, [])
 
   useEffect(() => {
-    // Load basic API data when UI mounts.
-    Promise.all([api.health(), api.info(), api.listGeometry()])
-      .then(([h, i, g]) => {
-        setHealth(h)
-        setInfo(i)
-        setGeoms(g)
-      })
-      .catch((err) => {
-        if (err?.status === 401) {
-          setLastAction('Session expired. Please sign in again.')
-          onLogout?.()
-          return
-        }
-        setLastAction('API unavailable. Start backend at http://localhost:8000')
-      })
-  }, [onLogout])
+    loadWorkspaceData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numericProjectId])
 
   useEffect(() => {
-    // Simple sync: rebuild meshes from geometry list (boxes only for now).
     const group = geomGroupRef.current
     if (!group) return
 
-    // dispose old meshes
-    group.children.forEach(child => {
+    group.children.forEach((child) => {
       if (child.geometry) child.geometry.dispose()
-      if (child.material) child.material.dispose()
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose())
+        else child.material.dispose()
+      }
     })
     group.clear()
 
@@ -132,19 +120,19 @@ function Workspace({ user, onUserUpdate, onLogout }) {
 
       const positions = new Float32Array(meshData.nodes.length * 3)
       const nodeIndex = new Map()
-      meshData.nodes.forEach((n, idx) => {
-        // gmsh uses z as vertical; map to y-up in three.js
-        positions[3 * idx] = n.x
-        positions[3 * idx + 1] = n.z
-        positions[3 * idx + 2] = n.y
-        nodeIndex.set(n.id, idx)
+
+      meshData.nodes.forEach((node, index) => {
+        positions[3 * index] = node.x
+        positions[3 * index + 1] = node.z
+        positions[3 * index + 2] = node.y
+        nodeIndex.set(node.id, index)
       })
 
       const indices = []
-      meshData.triangles.forEach(tri => {
-        const a = nodeIndex.get(tri[0])
-        const b = nodeIndex.get(tri[1])
-        const c = nodeIndex.get(tri[2])
+      meshData.triangles.forEach((triangle) => {
+        const a = nodeIndex.get(triangle[0])
+        const b = nodeIndex.get(triangle[1])
+        const c = nodeIndex.get(triangle[2])
         if (a === undefined || b === undefined || c === undefined) return
         indices.push(a, b, c)
       })
@@ -158,69 +146,112 @@ function Workspace({ user, onUserUpdate, onLogout }) {
       return geometry
     }
 
-    geoms.forEach(g => {
-      const gmshGeo = buildMeshFromGmsh(g.mesh)
+    geoms.forEach((geometryRecord) => {
+      const gmshGeometry = buildMeshFromGmsh(geometryRecord.mesh)
 
-      if (g.type === 'box') {
-        const w = Number(g?.params?.width) || 1
-        const h = Number(g?.params?.height) || 1
-        const d = Number(g?.params?.depth) || 1
-        const ox = Number(g?.params?.origin_x) || 0
-        const oy = Number(g?.params?.origin_y) || 0
-        const oz = Number(g?.params?.origin_z) || 0
-
-        const geo = gmshGeo || new THREE.BoxGeometry(w, h, d)
-        const edges = new THREE.EdgesGeometry(geo)
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x4b8fea })
-        const wire = new THREE.LineSegments(edges, lineMat)
-        if (!gmshGeo) wire.position.set(ox + w / 2, oz + h / 2, oy + d / 2)
+      if (geometryRecord.type === 'box') {
+        const w = Number(geometryRecord?.params?.width) || 1
+        const h = Number(geometryRecord?.params?.height) || 1
+        const d = Number(geometryRecord?.params?.depth) || 1
+        const ox = Number(geometryRecord?.params?.origin_x) || 0
+        const oy = Number(geometryRecord?.params?.origin_y) || 0
+        const oz = Number(geometryRecord?.params?.origin_z) || 0
+        const geometry = gmshGeometry || new THREE.BoxGeometry(w, h, d)
+        const wire = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geometry),
+          new THREE.LineBasicMaterial({ color: 0x4b8fea }),
+        )
+        if (!gmshGeometry) wire.position.set(ox + w / 2, oz + h / 2, oy + d / 2)
         group.add(wire)
         return
       }
 
-      if (g.type === 'sphere') {
-        const r = Number(g?.params?.radius) || 1
-        const cx = Number(g?.params?.center_x) || 0
-        const cy = Number(g?.params?.center_y) || 0
-        const cz = Number(g?.params?.center_z) || 0
-
-        const geo = gmshGeo || new THREE.SphereGeometry(r, 24, 16)
-        const edges = new THREE.EdgesGeometry(geo)
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xf5c542 })
-        const wire = new THREE.LineSegments(edges, lineMat)
-        if (!gmshGeo) wire.position.set(cx, cz, cy)
+      if (geometryRecord.type === 'sphere') {
+        const radius = Number(geometryRecord?.params?.radius) || 1
+        const cx = Number(geometryRecord?.params?.center_x) || 0
+        const cy = Number(geometryRecord?.params?.center_y) || 0
+        const cz = Number(geometryRecord?.params?.center_z) || 0
+        const geometry = gmshGeometry || new THREE.SphereGeometry(radius, 24, 16)
+        const wire = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geometry),
+          new THREE.LineBasicMaterial({ color: 0xf5c542 }),
+        )
+        if (!gmshGeometry) wire.position.set(cx, cz, cy)
         group.add(wire)
         return
       }
 
-      if (g.type === 'cylinder') {
-        const r = Number(g?.params?.radius) || 1
-        const h = Number(g?.params?.height) || 1
-        const bx = Number(g?.params?.base_x) || 0
-        const by = Number(g?.params?.base_y) || 0
-        const bz = Number(g?.params?.base_z) || 0
-
-        const geo = gmshGeo || new THREE.CylinderGeometry(r, r, h, 24, 1)
-        const edges = new THREE.EdgesGeometry(geo)
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x5ad35a })
-        const wire = new THREE.LineSegments(edges, lineMat)
-        if (!gmshGeo) wire.position.set(bx, bz + h / 2, by)
+      if (geometryRecord.type === 'cylinder') {
+        const radius = Number(geometryRecord?.params?.radius) || 1
+        const height = Number(geometryRecord?.params?.height) || 1
+        const bx = Number(geometryRecord?.params?.base_x) || 0
+        const by = Number(geometryRecord?.params?.base_y) || 0
+        const bz = Number(geometryRecord?.params?.base_z) || 0
+        const geometry = gmshGeometry || new THREE.CylinderGeometry(radius, radius, height, 24, 1)
+        const wire = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geometry),
+          new THREE.LineBasicMaterial({ color: 0x5ad35a }),
+        )
+        if (!gmshGeometry) wire.position.set(bx, bz + height / 2, by)
         group.add(wire)
         return
       }
 
-      if (g.type === 'cad') {
-        if (!gmshGeo) return
-        const mat = new THREE.MeshStandardMaterial({ color: 0x7ad4ff, wireframe: true, transparent: true, opacity: 0.7 })
-        const mesh = new THREE.Mesh(gmshGeo, mat)
+      if (geometryRecord.type === 'upload' || geometryRecord.type === 'cad') {
+        if (!gmshGeometry) return
+        const mesh = new THREE.Mesh(
+          gmshGeometry,
+          new THREE.MeshStandardMaterial({
+            color: 0x7ad4ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.7,
+          }),
+        )
         group.add(mesh)
       }
     })
   }, [geoms])
 
+  const loadWorkspaceData = async (message = '') => {
+    if (!Number.isInteger(numericProjectId) || numericProjectId <= 0) {
+      setLastAction('Invalid project ID.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const [healthData, infoData, projectData] = await Promise.all([
+        api.health(),
+        api.info(),
+        api.getProject(numericProjectId),
+      ])
+      setHealth(healthData)
+      setInfo(infoData)
+      setProject(projectData)
+      setGeoms(projectData?.geometries || [])
+      if (message) setLastAction(message)
+    } catch (requestError) {
+      if (requestError?.status === 401) {
+        setLastAction('Session expired. Please sign in again.')
+        await onLogout?.()
+        navigate('/auth', { replace: true })
+        return
+      }
+      if (requestError?.status === 404) {
+        setLastAction('Project not found. Return to your profile and open another project.')
+        return
+      }
+      setLastAction(requestError?.body?.detail || 'Workspace data could not be loaded.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleBox = async () => {
     try {
-      const geom = await api.createBox({
+      const geometry = await api.createBox(numericProjectId, {
         width: Number(boxParams.width),
         height: Number(boxParams.height),
         depth: Number(boxParams.depth),
@@ -228,120 +259,62 @@ function Workspace({ user, onUserUpdate, onLogout }) {
         origin_y: parseFloat(boxParams.origin_y) || 0,
         origin_z: parseFloat(boxParams.origin_z) || 0,
       })
-      const list = await api.listGeometry()
-      setGeoms(list)
-      setLastAction(`Created box id ${geom.id}`)
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to create box')
+      await loadWorkspaceData(`Created box geometry #${geometry.id}`)
+    } catch (requestError) {
+      setLastAction(requestError?.body?.detail || 'Failed to create box.')
     }
   }
 
   const handleSphere = async () => {
     try {
-      const geom = await api.createSphere({
+      const geometry = await api.createSphere(numericProjectId, {
         radius: Number(sphereParams.radius),
         center_x: parseFloat(sphereParams.center_x) || 0,
         center_y: parseFloat(sphereParams.center_y) || 0,
         center_z: parseFloat(sphereParams.center_z) || 0,
       })
-      const list = await api.listGeometry()
-      setGeoms(list)
-      setLastAction(`Created sphere id ${geom.id}`)
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to create sphere')
+      await loadWorkspaceData(`Created sphere geometry #${geometry.id}`)
+    } catch (requestError) {
+      setLastAction(requestError?.body?.detail || 'Failed to create sphere.')
     }
   }
 
   const handleCylinder = async () => {
     try {
-      const geom = await api.createCylinder({
+      const geometry = await api.createCylinder(numericProjectId, {
         radius: Number(cylParams.radius),
         height: Number(cylParams.height),
         base_x: parseFloat(cylParams.base_x) || 0,
         base_y: parseFloat(cylParams.base_y) || 0,
         base_z: parseFloat(cylParams.base_z) || 0,
       })
-      const list = await api.listGeometry()
-      setGeoms(list)
-      setLastAction(`Created cylinder id ${geom.id}`)
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to create cylinder')
+      await loadWorkspaceData(`Created cylinder geometry #${geometry.id}`)
+    } catch (requestError) {
+      setLastAction(requestError?.body?.detail || 'Failed to create cylinder.')
     }
   }
 
   const handleCadUpload = async () => {
     if (!cadFile) {
-      setLastAction('Choose a STEP/IGES/BREP/STL file first')
+      setLastAction('Choose a STEP, IGES, BREP, STL, VTK, or MSH file first.')
       return
     }
+
     try {
-      const geom = await api.uploadCAD(cadFile)
-      const list = await api.listGeometry()
-      setGeoms(list)
-      setLastAction(`Uploaded CAD id ${geom.id}`)
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to upload CAD')
+      const geometry = await api.uploadCAD(numericProjectId, cadFile)
+      setCadFile(null)
+      await loadWorkspaceData(`Uploaded geometry #${geometry.id}`)
+    } catch (requestError) {
+      setLastAction(requestError?.body?.detail || 'Failed to upload CAD or mesh.')
     }
   }
 
-  const handleDeleteGeom = async (id) => {
+  const handleDeleteGeom = async (geometryId) => {
     try {
-      await api.deleteGeometry(id)
-      const list = await api.listGeometry()
-      setGeoms(list)
-      setLastAction(`Deleted geometry ${id}`)
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to delete geometry')
-    }
-  }
-
-  const refreshInfo = async () => {
-    try {
-      const [h, i, g] = await Promise.all([api.health(), api.info(), api.listGeometry()])
-      setHealth(h)
-      setInfo(i)
-      setGeoms(g)
-      setLastAction('Refreshed status')
-    } catch (err) {
-      if (err?.status === 401) {
-        setLastAction('Session expired. Please sign in again.')
-        onLogout?.()
-        return
-      }
-      setLastAction(err.body?.detail || 'Failed to refresh status')
-    }
-  }
-
-  const start2FASetup = async () => {
-    try {
-      setTwoFABusy(true)
-      const data = await api.start2FASetup()
-      setTwoFASetup(data)
-      setTwoFACode('')
-      setLastAction('2FA setup started. Add the secret in your authenticator app.')
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to start 2FA setup')
-    } finally {
-      setTwoFABusy(false)
-    }
-  }
-
-  const confirm2FASetup = async () => {
-    if (!twoFACode.trim()) {
-      setLastAction('Enter the 6-digit code from your authenticator app')
-      return
-    }
-    try {
-      setTwoFABusy(true)
-      const data = await api.confirm2FASetup({ code: twoFACode.trim() })
-      if (data?.user) onUserUpdate?.(data.user)
-      setTwoFASetup(null)
-      setTwoFACode('')
-      setLastAction(data?.message || '2FA enabled')
-    } catch (err) {
-      setLastAction(err.body?.detail || 'Failed to confirm 2FA setup')
-    } finally {
-      setTwoFABusy(false)
+      await api.deleteGeometry(numericProjectId, geometryId)
+      await loadWorkspaceData(`Deleted geometry #${geometryId}`)
+    } catch (requestError) {
+      setLastAction(requestError?.body?.detail || 'Failed to delete geometry.')
     }
   }
 
@@ -349,94 +322,91 @@ function Workspace({ user, onUserUpdate, onLogout }) {
     <div className="layout">
       <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
         <div className="sidebar-header">
-          <span className="sidebar-title"></span>
+          <span className="sidebar-title">{collapsed ? '' : project?.name || 'Workspace'}</span>
           <button
             className="collapse-btn"
             aria-label="Toggle sidebar"
-            onClick={() => setCollapsed(v => !v)}
+            onClick={() => setCollapsed((value) => !value)}
           >
-            {collapsed ? '›' : '‹'}
+            {collapsed ? '>' : '<'}
           </button>
         </div>
 
         {!collapsed && (
           <div className="sidebar-body">
+            <div className="sidebar-section">Project</div>
+            <div className="card">
+              <div className="status-row"><span>Name:</span><span>{project?.name || 'Loading...'}</span></div>
+              <div className="status-row"><span>Project ID:</span><span>{projectId}</span></div>
+              <div className="status-row"><span>User:</span><span>{user?.email || '--'}</span></div>
+              <button className="btn" onClick={() => navigate('/profile')}>Back to Profile</button>
+              <button className="btn btn-danger" onClick={onLogout}>Sign Out</button>
+            </div>
+
             <div className="sidebar-section">Geometry</div>
             <ul className="sidebar-list">
               <li className="list-row">
                 <span>Box</span>
                 <div className="field-row">
                   <label>Size X</label>
-                  <input type="number" step="0.1" value={boxParams.width}
-                    onChange={e => setBoxParams(p => ({ ...p, width: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={boxParams.width} onChange={(event) => setBoxParams((value) => ({ ...value, width: parseFloat(event.target.value) }))} />
                   <label>Size Y</label>
-                  <input type="number" step="0.1" value={boxParams.height}
-                    onChange={e => setBoxParams(p => ({ ...p, height: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={boxParams.height} onChange={(event) => setBoxParams((value) => ({ ...value, height: parseFloat(event.target.value) }))} />
                   <label>Size Z</label>
-                  <input type="number" step="0.1" value={boxParams.depth}
-                    onChange={e => setBoxParams(p => ({ ...p, depth: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={boxParams.depth} onChange={(event) => setBoxParams((value) => ({ ...value, depth: parseFloat(event.target.value) }))} />
                 </div>
                 <div className="field-row">
                   <label>Pos X</label>
-                  <input type="number" step="0.1" value={boxParams.origin_x}
-                    onChange={e => setBoxParams(p => ({ ...p, origin_x: e.target.value }))} />
+                  <input type="number" step="0.1" value={boxParams.origin_x} onChange={(event) => setBoxParams((value) => ({ ...value, origin_x: event.target.value }))} />
                   <label>Pos Y</label>
-                  <input type="number" step="0.1" value={boxParams.origin_y}
-                    onChange={e => setBoxParams(p => ({ ...p, origin_y: e.target.value }))} />
+                  <input type="number" step="0.1" value={boxParams.origin_y} onChange={(event) => setBoxParams((value) => ({ ...value, origin_y: event.target.value }))} />
                   <label>Pos Z</label>
-                  <input type="number" step="0.1" value={boxParams.origin_z}
-                    onChange={e => setBoxParams(p => ({ ...p, origin_z: e.target.value }))} />
+                  <input type="number" step="0.1" value={boxParams.origin_z} onChange={(event) => setBoxParams((value) => ({ ...value, origin_z: event.target.value }))} />
                 </div>
                 <button className="btn" onClick={handleBox}>Create</button>
               </li>
+
               <li className="list-row">
                 <span>Sphere</span>
                 <div className="field-row">
                   <label>Radius</label>
-                  <input type="number" step="0.1" value={sphereParams.radius}
-                    onChange={e => setSphereParams(p => ({ ...p, radius: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={sphereParams.radius} onChange={(event) => setSphereParams((value) => ({ ...value, radius: parseFloat(event.target.value) }))} />
                   <label>Pos X</label>
-                  <input type="number" step="0.1" value={sphereParams.center_x}
-                    onChange={e => setSphereParams(p => ({ ...p, center_x: e.target.value }))} />
+                  <input type="number" step="0.1" value={sphereParams.center_x} onChange={(event) => setSphereParams((value) => ({ ...value, center_x: event.target.value }))} />
                   <label>Pos Y</label>
-                  <input type="number" step="0.1" value={sphereParams.center_y}
-                    onChange={e => setSphereParams(p => ({ ...p, center_y: e.target.value }))} />
+                  <input type="number" step="0.1" value={sphereParams.center_y} onChange={(event) => setSphereParams((value) => ({ ...value, center_y: event.target.value }))} />
                   <label>Pos Z</label>
-                  <input type="number" step="0.1" value={sphereParams.center_z}
-                    onChange={e => setSphereParams(p => ({ ...p, center_z: e.target.value }))} />
+                  <input type="number" step="0.1" value={sphereParams.center_z} onChange={(event) => setSphereParams((value) => ({ ...value, center_z: event.target.value }))} />
                 </div>
                 <button className="btn" onClick={handleSphere}>Create</button>
               </li>
+
               <li className="list-row">
                 <span>Cylinder</span>
                 <div className="field-row">
                   <label>Radius</label>
-                  <input type="number" step="0.1" value={cylParams.radius}
-                    onChange={e => setCylParams(p => ({ ...p, radius: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={cylParams.radius} onChange={(event) => setCylParams((value) => ({ ...value, radius: parseFloat(event.target.value) }))} />
                   <label>Height</label>
-                  <input type="number" step="0.1" value={cylParams.height}
-                    onChange={e => setCylParams(p => ({ ...p, height: parseFloat(e.target.value) }))} />
+                  <input type="number" step="0.1" value={cylParams.height} onChange={(event) => setCylParams((value) => ({ ...value, height: parseFloat(event.target.value) }))} />
                 </div>
                 <div className="field-row">
                   <label>Pos X</label>
-                  <input type="number" step="0.1" value={cylParams.base_x}
-                    onChange={e => setCylParams(p => ({ ...p, base_x: e.target.value }))} />
+                  <input type="number" step="0.1" value={cylParams.base_x} onChange={(event) => setCylParams((value) => ({ ...value, base_x: event.target.value }))} />
                   <label>Pos Y</label>
-                  <input type="number" step="0.1" value={cylParams.base_y}
-                    onChange={e => setCylParams(p => ({ ...p, base_y: e.target.value }))} />
+                  <input type="number" step="0.1" value={cylParams.base_y} onChange={(event) => setCylParams((value) => ({ ...value, base_y: event.target.value }))} />
                   <label>Pos Z</label>
-                  <input type="number" step="0.1" value={cylParams.base_z}
-                    onChange={e => setCylParams(p => ({ ...p, base_z: e.target.value }))} />
+                  <input type="number" step="0.1" value={cylParams.base_z} onChange={(event) => setCylParams((value) => ({ ...value, base_z: event.target.value }))} />
                 </div>
                 <button className="btn" onClick={handleCylinder}>Create</button>
               </li>
+
               <li className="list-row">
                 <span>Import CAD / Mesh</span>
                 <div className="field-row file-row">
                   <input
                     type="file"
                     accept=".step,.stp,.iges,.igs,.brep,.stl,.vtk,.msh"
-                    onChange={e => setCadFile(e.target.files?.[0] || null)}
+                    onChange={(event) => setCadFile(event.target.files?.[0] || null)}
                   />
                   <span className="file-name">{cadFile ? cadFile.name : 'No file chosen'}</span>
                 </div>
@@ -444,69 +414,29 @@ function Workspace({ user, onUserUpdate, onLogout }) {
               </li>
             </ul>
 
-            <div className="sidebar-section">Operations</div>
-            <ul className="sidebar-list">
-              <li>Boolean: Fuse / Cut / Intersect</li>
-              <li>Transform: Translate / Rotate / Scale</li>
-              <li>Import STEP / STL</li>
-            </ul>
-
-            <div className="sidebar-section">Mesh</div>
-            <ul className="sidebar-list">
-              <li>Generate 1D / 2D / 3D</li>
-              <li>Algorithms & sizing</li>
-              <li>Export .msh / .stl / .vtk</li>
-            </ul>
-
             <div className="sidebar-section">Status</div>
             <div className="card">
-              <div className="status-row"><span>User:</span><span>{user?.email || '—'}</span></div>
-              <div className="status-row"><span>Health:</span><span>{health ? health.status : '—'}</span></div>
-              <div className="status-row"><span>Backend:</span><span>{info ? `${info.name} v${info.version}` : '—'}</span></div>
-              <div className="status-row"><span>gmsh:</span><span>{info ? (info.gmsh_available ? 'available' : 'missing') : '—'}</span></div>
+              <div className="status-row"><span>Health:</span><span>{health ? health.status : '--'}</span></div>
+              <div className="status-row"><span>Backend:</span><span>{info ? `${info.name} v${info.version}` : '--'}</span></div>
+              <div className="status-row"><span>gmsh:</span><span>{info ? (info.gmsh_available ? 'available' : 'missing') : '--'}</span></div>
+              <div className="status-row"><span>Projects:</span><span>{info?.project_count ?? '--'}</span></div>
               <div className="status-row"><span>Geometries:</span><span>{geoms.length}</span></div>
-              <div className="status-row"><span>2FA:</span><span>{user?.totp_enabled ? 'enabled' : 'disabled'}</span></div>
-              {!user?.totp_enabled && (
-                <button className="btn" onClick={start2FASetup} disabled={twoFABusy}>
-                  {twoFABusy ? 'Preparing...' : 'Enable 2FA'}
-                </button>
-              )}
-              <button className="btn" onClick={refreshInfo}>Refresh</button>
-              <button className="btn btn-danger" onClick={onLogout}>Sign Out</button>
+              <button className="btn" onClick={() => loadWorkspaceData('Workspace refreshed.')}>Refresh</button>
             </div>
-            {twoFASetup && (
-              <div className="card">
-                <div className="sidebar-section">2FA Setup</div>
-                <div className="note">Secret: <code>{twoFASetup.secret}</code></div>
-                <div className="note">OTP URI: <code>{twoFASetup.otpauth_uri}</code></div>
-                <div className="field-row twofa-row">
-                  <label>Code</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="123456"
-                    value={twoFACode}
-                    onChange={e => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  />
-                </div>
-                <button className="btn" onClick={confirm2FASetup} disabled={twoFABusy}>
-                  {twoFABusy ? 'Verifying...' : 'Confirm 2FA'}
-                </button>
-              </div>
-            )}
+
             {lastAction && <div className="note">{lastAction}</div>}
+
             {geoms.length > 0 && (
               <div className="card">
                 <div className="sidebar-section">Geometry List</div>
                 <ul className="sidebar-list compact">
-                  {geoms.map(g => (
-                    <li key={g.id}>
-                      {g.type} #{g.id} — {JSON.stringify(g.params)}
+                  {geoms.map((geometryRecord) => (
+                    <li key={geometryRecord.id}>
+                      {geometryRecord.type} #{geometryRecord.id} - {JSON.stringify(geometryRecord.params)}
                       <button
                         className="btn"
                         style={{ marginLeft: '8px', padding: '4px 8px' }}
-                        onClick={() => handleDeleteGeom(g.id)}
+                        onClick={() => handleDeleteGeom(geometryRecord.id)}
                       >
                         Delete
                       </button>
@@ -521,8 +451,8 @@ function Workspace({ user, onUserUpdate, onLogout }) {
 
       <div className="viewport" ref={mountRef}>
         <div className="hud">
-          <div className="hud-row">Orbit: drag • Pan: right-drag • Zoom: scroll</div>
-          <div className="hud-row">3D workspace ready; wiring to commands comes next.</div>
+          <div className="hud-row">Orbit: drag | Pan: right-drag | Zoom: scroll</div>
+          <div className="hud-row">{loading ? 'Loading project workspace...' : `Project ready: ${project?.name || `#${projectId}`}`}</div>
         </div>
       </div>
 
@@ -531,8 +461,7 @@ function Workspace({ user, onUserUpdate, onLogout }) {
           className="expand-fab"
           aria-label="Expand sidebar"
           onClick={() => setCollapsed(false)}
-        >
-        </button>
+        />
       )}
     </div>
   )

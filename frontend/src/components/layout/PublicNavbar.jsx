@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import Button from '../ui/Button'
 import { useAuth } from '../../context/useAuth'
 import { useTheme } from '../../hooks/useTheme'
@@ -19,6 +19,8 @@ function NavItem({ to, children }) {
 export default function PublicNavbar() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const location = useLocation()
+  const onHomePage = location.pathname === '/'
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/85 backdrop-blur">
@@ -27,9 +29,13 @@ export default function PublicNavbar() {
 
         <nav className="hidden items-center gap-8 md:flex">
           <NavItem to="/">Home</NavItem>
-          <a href="#features" className="text-sm font-medium text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Features</a>
-          <a href="/docs" className="text-sm font-medium text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Docs</a>
-          <a href="#pricing" className="text-sm font-medium text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Pricing</a>
+          {onHomePage && (
+            <>
+              <a href="#features" className="text-sm font-medium text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">Features</a>
+              <a href="#how-it-works" className="text-sm font-medium text-slate-300 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">How It Works</a>
+            </>
+          )}
+          {user && <NavItem to="/profile">Profile</NavItem>}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -45,18 +51,18 @@ export default function PublicNavbar() {
           {user ? (
             <>
               <Link to="/profile">
-                <Button variant="ghost">Profile</Button>
+                <Button variant="ghost">View Projects</Button>
               </Link>
-              <Link to="/workspace">
-                <Button>Open Workspace</Button>
+              <Link to="/profile">
+                <Button>Dashboard</Button>
               </Link>
             </>
           ) : (
             <>
-              <Link to="/signin">
+              <Link to="/auth">
                 <Button variant="ghost">Sign In</Button>
               </Link>
-              <Link to="/signup">
+              <Link to="/auth">
                 <Button>Get Started</Button>
               </Link>
             </>

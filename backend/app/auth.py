@@ -7,7 +7,6 @@ import re
 import secrets
 import smtplib
 import sqlite3
-import time
 from email.message import EmailMessage
 from pathlib import Path
 from typing import Literal
@@ -18,6 +17,11 @@ from urllib.request import Request as URLRequest, urlopen
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
+
+try:
+    from .db import connect_db, isoformat_ts, now_ts
+except ImportError:
+    from db import connect_db, isoformat_ts, now_ts
 
 
 def _load_env_files() -> None:
@@ -39,8 +43,6 @@ def _load_env_files() -> None:
 
 _load_env_files()
 
-
-DB_PATH = Path(__file__).resolve().parent / "webmsh_auth.sqlite3"
 
 SESSION_COOKIE_NAME = "webmsh_session"
 SESSION_TTL_SECONDS = int(os.getenv("WEBMSH_SESSION_TTL_SECONDS", "43200"))
@@ -77,6 +79,8 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 OAUTH_STATE_TTL_SECONDS = 600
+AUTH_REDIRECT_PATH = "/auth"
+PROFILE_REDIRECT_PATH = "/profile"
 
 TOTP_ISSUER = "WebMsh"
 TOTP_PERIOD = 30
@@ -95,6 +99,7 @@ if not AUTH_SECRET:
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+OTPChallengePurpose = Literal["signup", "login", "password_change"]
 
 
 class AuthUser(BaseModel):
@@ -105,6 +110,12 @@ class AuthUser(BaseModel):
     totp_enabled: bool
     has_password: bool
     auth_provider: str
+
+
+class UserProfileResponse(BaseModel):
+    email: str
+    created_at: str
+    totp_enabled: bool
 
 
 class SignUpRequest(BaseModel):
@@ -142,15 +153,21 @@ class TwoFADisableRequest(BaseModel):
     code: str = Field(min_length=6, max_length=6)
 
 
+class PasswordChangeRequest(BaseModel):
+    old_password: str = Field(min_length=1, max_length=256)
+    new_password: str = Field(min_length=8, max_length=256)
+
+
+class PasswordChangeConfirmRequest(BaseModel):
+    otp_code: str = Field(min_length=6, max_length=6)
+
+
 def _now_ts() -> int:
-    return int(time.time())
+    return now_ts()
 
 
 def _connect() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    return connect_db()
 
 
 def init_auth_db() -> None:
@@ -177,6 +194,7 @@ def init_auth_db() -> None:
                 user_id INTEGER NOT NULL,
                 purpose TEXT NOT NULL,
                 code_hash TEXT NOT NULL,
+                context_json TEXT,
                 expires_at INTEGER NOT NULL,
                 attempts_left INTEGER NOT NULL,
                 consumed INTEGER NOT NULL DEFAULT 0,
@@ -229,6 +247,12 @@ def init_auth_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_oauth_states ON oauth_states(state_hash, consumed, expires_at);
             """
         )
+        otp_columns = {
+            str(row["name"])
+            for row in conn.execute("PRAGMA table_info(otp_challenges)").fetchall()
+        }
+        if "context_json" not in otp_columns:
+            conn.execute("ALTER TABLE otp_challenges ADD COLUMN context_json TEXT")
 
 
 def _normalize_email(email: str) -> str:
@@ -323,21 +347,17 @@ def _get_user_by_google_sub(conn: sqlite3.Connection, google_sub: str) -> sqlite
     ).fetchone()
 
 
-def _dispatch_otp(email: str, purpose: str, code: str) -> None:
+def _send_email_message(
+    email: str,
+    subject: str,
+    body: str,
+    *,
+    debug_tag: str,
+    require_delivery: bool,
+    failure_detail: str,
+) -> bool:
     smtp_ready = bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD)
-    if SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD:
-        action = "sign in" if purpose == "login" else "verify your account"
-        minutes = max(1, int(OTP_TTL_SECONDS / 60))
-        subject = f"WebMsh OTP Code ({purpose})"
-        body = (
-            f"Hello,\n\n"
-            f"Use this one-time code to {action} on WebMsh:\n\n"
-            f"    {code}\n\n"
-            f"This code expires in {minutes} minute(s).\n"
-            f"If you did not request this code, you can ignore this email.\n\n"
-            f"Regards,\nWebMsh Security"
-        )
-
+    if smtp_ready:
         msg = EmailMessage()
         msg["Subject"] = subject
         msg["From"] = SMTP_FROM_EMAIL
@@ -355,21 +375,50 @@ def _dispatch_otp(email: str, purpose: str, code: str) -> None:
                         server.starttls()
                     server.login(SMTP_USERNAME, SMTP_PASSWORD)
                     server.send_message(msg)
-            return
+            return True
         except Exception as exc:
-            print(f"[auth][otp] smtp send failed ({email}, {purpose}): {exc}")
-            raise HTTPException(
-                status_code=502,
-                detail="OTP delivery failed. Check SMTP credentials and try again.",
-            )
+            print(f"[auth][{debug_tag}] smtp send failed ({email}): {exc}")
+            if require_delivery:
+                raise HTTPException(status_code=502, detail=failure_detail)
+            return False
 
-    # Fallback mode for local development when SMTP is not configured.
-    if not AUTH_DEBUG_OTP and not smtp_ready:
+    if AUTH_DEBUG_OTP:
+        print(f"[auth][{debug_tag}] email={email} subject={subject}\n{body}")
+        return True
+
+    if require_delivery:
         raise HTTPException(
             status_code=503,
             detail="OTP email delivery is not configured on the server.",
         )
-    print(f"[auth][otp] purpose={purpose} email={email} code={code}")
+    return False
+
+
+def _dispatch_otp(email: str, purpose: str, code: str) -> None:
+    action_by_purpose = {
+        "login": "sign in",
+        "signup": "verify your account",
+        "password_change": "confirm a password change",
+    }
+    action = action_by_purpose.get(purpose, "continue")
+    minutes = max(1, int(OTP_TTL_SECONDS / 60))
+    subject = f"WebMsh OTP Code ({purpose.replace('_', ' ')})"
+    body = (
+        f"Hello,\n\n"
+        f"Use this one-time code to {action} on WebMsh:\n\n"
+        f"    {code}\n\n"
+        f"This code expires in {minutes} minute(s).\n"
+        f"If you did not request this code, you can ignore this email.\n\n"
+        f"Regards,\nWebMsh Security"
+    )
+    _send_email_message(
+        email,
+        subject,
+        body,
+        debug_tag="otp",
+        require_delivery=True,
+        failure_detail="OTP delivery failed. Check SMTP credentials and try again.",
+    )
 
 
 def _otp_debug_payload(code: str) -> dict:
@@ -379,7 +428,11 @@ def _otp_debug_payload(code: str) -> dict:
 
 
 def _create_otp(
-    conn: sqlite3.Connection, user_id: int, purpose: Literal["signup", "login"], email: str
+    conn: sqlite3.Connection,
+    user_id: int,
+    purpose: OTPChallengePurpose,
+    email: str,
+    context: dict | None = None,
 ) -> str:
     conn.execute(
         "UPDATE otp_challenges SET consumed = 1 WHERE user_id = ? AND purpose = ? AND consumed = 0",
@@ -389,13 +442,14 @@ def _create_otp(
     now = _now_ts()
     conn.execute(
         """
-        INSERT INTO otp_challenges (user_id, purpose, code_hash, expires_at, attempts_left, consumed, created_at)
-        VALUES (?, ?, ?, ?, ?, 0, ?)
+        INSERT INTO otp_challenges (user_id, purpose, code_hash, context_json, expires_at, attempts_left, consumed, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?)
         """,
         (
             user_id,
             purpose,
             _hash_secret_value(f"otp:{code}"),
+            json.dumps(context) if context else None,
             now + OTP_TTL_SECONDS,
             OTP_MAX_ATTEMPTS,
             now,
@@ -405,11 +459,12 @@ def _create_otp(
     return code
 
 
-def _consume_otp(
-    conn: sqlite3.Connection, user_id: int, purpose: Literal["signup", "login"], code: str
-) -> tuple[bool, str | None]:
-    now = _now_ts()
-    row = conn.execute(
+def _latest_otp_challenge(
+    conn: sqlite3.Connection,
+    user_id: int,
+    purpose: OTPChallengePurpose,
+) -> sqlite3.Row | None:
+    return conn.execute(
         """
         SELECT * FROM otp_challenges
         WHERE user_id = ? AND purpose = ? AND consumed = 0
@@ -419,32 +474,52 @@ def _consume_otp(
         (user_id, purpose),
     ).fetchone()
 
+
+def _consume_otp(
+    conn: sqlite3.Connection,
+    user_id: int,
+    purpose: OTPChallengePurpose,
+    code: str,
+) -> tuple[bool, str | None, sqlite3.Row | None]:
+    now = _now_ts()
+    row = _latest_otp_challenge(conn, user_id, purpose)
+
     if row is None:
-        return False, "No active code found. Request a new OTP."
+        return False, "No active code found. Request a new OTP.", None
 
     if int(row["expires_at"]) < now:
         conn.execute("UPDATE otp_challenges SET consumed = 1 WHERE id = ?", (row["id"],))
-        return False, "Code expired. Request a new OTP."
+        return False, "Code expired. Request a new OTP.", row
 
     if int(row["attempts_left"]) <= 0:
         conn.execute("UPDATE otp_challenges SET consumed = 1 WHERE id = ?", (row["id"],))
-        return False, "Too many invalid attempts. Request a new OTP."
+        return False, "Too many invalid attempts. Request a new OTP.", row
 
     if not OTP_PATTERN.match(code):
-        return False, "Enter a valid 6-digit code."
+        return False, "Enter a valid 6-digit code.", row
 
     expected = row["code_hash"]
     candidate = _hash_secret_value(f"otp:{code}")
     if hmac.compare_digest(expected, candidate):
         conn.execute("UPDATE otp_challenges SET consumed = 1 WHERE id = ?", (row["id"],))
-        return True, None
+        return True, None, row
 
     remaining = int(row["attempts_left"]) - 1
     conn.execute(
         "UPDATE otp_challenges SET attempts_left = ?, consumed = ? WHERE id = ?",
         (max(remaining, 0), 1 if remaining <= 0 else 0, row["id"]),
     )
-    return False, "Invalid one-time code."
+    return False, "Invalid one-time code.", row
+
+
+def _otp_context(row: sqlite3.Row | None) -> dict:
+    if row is None or not row["context_json"]:
+        return {}
+    try:
+        payload = json.loads(str(row["context_json"]))
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _signin_identity(email: str, request: Request) -> str:
@@ -553,6 +628,19 @@ def _revoke_session(conn: sqlite3.Connection, raw_token: str) -> None:
     conn.execute("UPDATE sessions SET revoked = 1 WHERE token_hash = ?", (token_hash,))
 
 
+def _revoke_user_sessions(
+    conn: sqlite3.Connection, user_id: int, except_raw_token: str | None = None
+) -> None:
+    if except_raw_token:
+        token_hash = _hash_secret_value(f"session:{except_raw_token}")
+        conn.execute(
+            "UPDATE sessions SET revoked = 1 WHERE user_id = ? AND token_hash != ?",
+            (user_id, token_hash),
+        )
+        return
+    conn.execute("UPDATE sessions SET revoked = 1 WHERE user_id = ?", (user_id,))
+
+
 def _get_user_from_session(conn: sqlite3.Connection, raw_token: str) -> sqlite3.Row | None:
     token_hash = _hash_secret_value(f"session:{raw_token}")
     now = _now_ts()
@@ -571,6 +659,23 @@ def _get_user_from_session(conn: sqlite3.Connection, raw_token: str) -> sqlite3.
             (now, token_hash),
         )
     return row
+
+
+def _send_password_changed_email(email: str) -> None:
+    body = (
+        "Hello,\n\n"
+        "Your WebMsh password has been changed successfully.\n\n"
+        "If you did not make this change, secure your account immediately and contact support.\n\n"
+        "Regards,\nWebMsh Security"
+    )
+    _send_email_message(
+        email,
+        "Your WebMsh password was changed",
+        body,
+        debug_tag="password-change",
+        require_delivery=False,
+        failure_detail="Password change confirmation email could not be delivered.",
+    )
 
 
 def _base32_secret(num_bytes: int = 20) -> str:
@@ -862,7 +967,7 @@ def verify_signup_otp(body: OTPVerifyRequest):
         if bool(user["is_email_verified"]):
             return {"message": "Email is already verified."}
 
-        ok, error = _consume_otp(conn, int(user["id"]), "signup", body.code.strip())
+        ok, error, _ = _consume_otp(conn, int(user["id"]), "signup", body.code.strip())
         if not ok:
             raise HTTPException(status_code=400, detail=error)
 
@@ -924,7 +1029,7 @@ def verify_signin_otp(body: OTPVerifyRequest, request: Request, response: Respon
         if user is None:
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        ok, error = _consume_otp(conn, int(user["id"]), "login", body.code.strip())
+        ok, error, _ = _consume_otp(conn, int(user["id"]), "login", body.code.strip())
         if not ok:
             raise HTTPException(status_code=401, detail=error)
 
@@ -997,6 +1102,116 @@ def auth_config():
 @router.get("/me", response_model=AuthUser)
 def me(current_user: AuthUser = Depends(get_current_user)):
     return current_user
+
+
+@router.get("/profile", response_model=UserProfileResponse)
+def profile(current_user: AuthUser = Depends(get_current_user)):
+    with _connect() as conn:
+        user = _get_user_by_id(conn, current_user.id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="Account not found")
+        return UserProfileResponse(
+            email=str(user["email"]),
+            created_at=isoformat_ts(int(user["created_at"])) or "",
+            totp_enabled=bool(user["totp_enabled"]),
+        )
+
+
+@router.post("/password/change/request")
+def request_password_change(
+    body: PasswordChangeRequest, current_user: AuthUser = Depends(get_current_user)
+):
+    with _connect() as conn:
+        user = _get_user_by_id(conn, current_user.id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="Account not found")
+        if not user["password_hash"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Password sign-in is not enabled for this account.",
+            )
+
+        stored_hash = str(user["password_hash"])
+        if not _verify_password(body.old_password, stored_hash):
+            raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+        issues = _password_policy_issues(body.new_password, str(user["email"]))
+        if issues:
+            raise HTTPException(
+                status_code=422,
+                detail={"message": "Password does not meet policy", "issues": issues},
+            )
+
+        if _verify_password(body.new_password, stored_hash):
+            raise HTTPException(
+                status_code=422,
+                detail="Choose a new password different from the current password",
+            )
+
+        code = _create_otp(
+            conn,
+            int(user["id"]),
+            "password_change",
+            str(user["email"]),
+            context={"new_password_hash": _hash_password(body.new_password)},
+        )
+
+    payload = {
+        "message": "We sent an OTP to your email. Enter it to confirm the password change.",
+        "next": "password_change_otp",
+    }
+    payload.update(_otp_debug_payload(code))
+    return payload
+
+
+@router.post("/password/change/confirm")
+def confirm_password_change(
+    body: PasswordChangeConfirmRequest,
+    request: Request,
+    current_user: AuthUser = Depends(get_current_user),
+):
+    with _connect() as conn:
+        user = _get_user_by_id(conn, current_user.id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="Account not found")
+        if not user["password_hash"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Password sign-in is not enabled for this account.",
+            )
+
+        ok, error, row = _consume_otp(
+            conn,
+            int(user["id"]),
+            "password_change",
+            body.otp_code.strip(),
+        )
+        if not ok:
+            raise HTTPException(status_code=400, detail=error)
+
+        context = _otp_context(row)
+        new_password_hash = context.get("new_password_hash")
+        if not isinstance(new_password_hash, str) or not new_password_hash:
+            raise HTTPException(
+                status_code=400,
+                detail="No pending password change found. Request a new OTP.",
+            )
+
+        now = _now_ts()
+        conn.execute(
+            "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+            (new_password_hash, now, user["id"]),
+        )
+        _revoke_user_sessions(
+            conn,
+            int(user["id"]),
+            except_raw_token=request.cookies.get(SESSION_COOKIE_NAME),
+        )
+
+    _send_password_changed_email(str(user["email"]))
+    return {
+        "message": "Password changed successfully. Other active sessions have been signed out.",
+    }
 
 
 @router.post("/logout")
@@ -1104,7 +1319,7 @@ def disable_two_factor(
 def google_start(return_to: str | None = None):
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         return RedirectResponse(
-            _frontend_redirect_url(return_to, auth_error="google_not_configured"),
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_not_configured"),
             status_code=302,
         )
     with _connect() as conn:
@@ -1121,11 +1336,13 @@ def google_callback(
 ):
     if error:
         return RedirectResponse(
-            _frontend_redirect_url("/", auth_error=f"google_{error}"), status_code=302
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error=f"google_{error}"),
+            status_code=302,
         )
     if not state or not code:
         return RedirectResponse(
-            _frontend_redirect_url("/", auth_error="google_missing_code"), status_code=302
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_missing_code"),
+            status_code=302,
         )
 
     with _connect() as conn:
@@ -1133,7 +1350,8 @@ def google_callback(
 
     if state_row is None:
         return RedirectResponse(
-            _frontend_redirect_url("/", auth_error="google_invalid_state"), status_code=302
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_invalid_state"),
+            status_code=302,
         )
 
     try:
@@ -1144,9 +1362,7 @@ def google_callback(
         profile = _google_userinfo(str(access_token))
     except HTTPException:
         return RedirectResponse(
-            _frontend_redirect_url(
-                str(state_row["return_to"]), auth_error="google_exchange_failed"
-            ),
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_exchange_failed"),
             status_code=302,
         )
 
@@ -1157,64 +1373,65 @@ def google_callback(
 
     if not email or not google_sub or not EMAIL_PATTERN.match(email):
         return RedirectResponse(
-            _frontend_redirect_url(
-                str(state_row["return_to"]), auth_error="google_profile_incomplete"
-            ),
+            _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_profile_incomplete"),
             status_code=302,
         )
 
     with _connect() as conn:
         now = _now_ts()
-        user = _get_user_by_google_sub(conn, google_sub)
-        if user is None:
-            existing = _get_user_by_email(conn, email)
-            if existing:
-                conn.execute(
-                    """
-                    UPDATE users
-                    SET google_sub = ?, is_email_verified = CASE WHEN ? THEN 1 ELSE is_email_verified END,
-                        display_name = COALESCE(display_name, ?), updated_at = ?
-                    WHERE id = ?
-                    """,
-                    (google_sub, 1 if is_verified else 0, name, now, existing["id"]),
-                )
-                user_id = int(existing["id"])
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO users (
-                        email, display_name, password_hash, is_email_verified, google_sub,
-                        totp_enabled, totp_secret, pending_totp_secret, created_at, updated_at
-                    )
-                    VALUES (?, ?, NULL, ?, ?, 0, NULL, NULL, ?, ?)
-                    """,
-                    (email, name, 1 if is_verified else 0, google_sub, now, now),
-                )
-                user_id = int(conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"])
-            user = _get_user_by_id(conn, user_id)
-        else:
+        existing = _get_user_by_email(conn, email)
+        linked = _get_user_by_google_sub(conn, google_sub)
+
+        if existing:
+            safe_google_sub = google_sub
+            if linked is not None and int(linked["id"]) != int(existing["id"]):
+                safe_google_sub = existing["google_sub"]
             conn.execute(
                 """
                 UPDATE users
-                SET display_name = COALESCE(display_name, ?),
+                SET google_sub = ?,
+                    display_name = COALESCE(display_name, ?),
                     is_email_verified = CASE WHEN ? THEN 1 ELSE is_email_verified END,
                     updated_at = ?
                 WHERE id = ?
                 """,
-                (name, 1 if is_verified else 0, now, user["id"]),
+                (safe_google_sub, name, 1 if is_verified else 0, now, existing["id"]),
             )
-            user = _get_user_by_id(conn, int(user["id"]))
+            user = _get_user_by_id(conn, int(existing["id"]))
+        elif linked is not None:
+            conn.execute(
+                """
+                UPDATE users
+                SET email = ?, display_name = COALESCE(display_name, ?),
+                    is_email_verified = CASE WHEN ? THEN 1 ELSE is_email_verified END,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (email, name, 1 if is_verified else 0, now, linked["id"]),
+            )
+            user = _get_user_by_id(conn, int(linked["id"]))
+        else:
+            conn.execute(
+                """
+                INSERT INTO users (
+                    email, display_name, password_hash, is_email_verified, google_sub,
+                    totp_enabled, totp_secret, pending_totp_secret, created_at, updated_at
+                )
+                VALUES (?, ?, NULL, ?, ?, 0, NULL, NULL, ?, ?)
+                """,
+                (email, name, 1 if is_verified else 0, google_sub, now, now),
+            )
+            user_id = int(conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"])
+            user = _get_user_by_id(conn, user_id)
 
         if user is None:
             return RedirectResponse(
-                _frontend_redirect_url(
-                    str(state_row["return_to"]), auth_error="google_account_creation_failed"
-                ),
+                _frontend_redirect_url(AUTH_REDIRECT_PATH, auth_error="google_account_creation_failed"),
                 status_code=302,
             )
 
         response = RedirectResponse(
-            _frontend_redirect_url(str(state_row["return_to"]), auth="google_success"),
+            _frontend_redirect_url(PROFILE_REDIRECT_PATH, auth="google_success"),
             status_code=302,
         )
         raw_token = _create_session(conn, int(user["id"]), request)

@@ -1,10 +1,9 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import AuthPage from './AuthPage'
 import Workspace from './Workspace'
 import { useAuth } from './context/useAuth'
 import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
-import SignInPage from './pages/SignInPage'
-import SignUpPage from './pages/SignUpPage'
 
 function FullPageLoader() {
   return (
@@ -17,38 +16,36 @@ function FullPageLoader() {
 }
 
 function ProtectedRoute({ children }) {
-  const location = useLocation()
   const { user, loading } = useAuth()
 
   if (loading) return <FullPageLoader />
-  if (user) return children
-
-  const params = new URLSearchParams()
-  const returnTo = `${location.pathname}${location.search}`
-  params.set('returnTo', returnTo)
-
-  const authError = new URLSearchParams(location.search).get('auth_error')
-  if (authError) params.set('auth_error', authError)
-
-  return <Navigate to={`/signin?${params.toString()}`} replace />
+  if (!user) return <Navigate to="/auth" replace />
+  return children
 }
 
 function GuestOnlyRoute({ children }) {
-  const location = useLocation()
   const { user, loading } = useAuth()
 
   if (loading) return <FullPageLoader />
-  if (!user) return children
+  if (user) return <Navigate to="/profile" replace />
+  return children
+}
 
-  const requestedReturn = new URLSearchParams(location.search).get('returnTo')
-  const target = requestedReturn && requestedReturn.startsWith('/') ? requestedReturn : '/workspace'
-  return <Navigate to={target} replace />
+function RootRoute() {
+  const { user, loading } = useAuth()
+
+  if (loading) return <FullPageLoader />
+  if (user) return <Navigate to="/profile" replace />
+  return <HomePage />
 }
 
 function WorkspaceRoute() {
+  const { projectId } = useParams()
   const { user, setUser, signOut } = useAuth()
+
   return (
     <Workspace
+      projectId={projectId}
       user={user}
       onUserUpdate={setUser}
       onLogout={signOut}
@@ -59,20 +56,12 @@ function WorkspaceRoute() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<RootRoute />} />
       <Route
-        path="/signin"
+        path="/auth"
         element={(
           <GuestOnlyRoute>
-            <SignInPage />
-          </GuestOnlyRoute>
-        )}
-      />
-      <Route
-        path="/signup"
-        element={(
-          <GuestOnlyRoute>
-            <SignUpPage />
+            <AuthPage />
           </GuestOnlyRoute>
         )}
       />
@@ -85,7 +74,7 @@ function App() {
         )}
       />
       <Route
-        path="/workspace"
+        path="/workspace/:projectId"
         element={(
           <ProtectedRoute>
             <WorkspaceRoute />
