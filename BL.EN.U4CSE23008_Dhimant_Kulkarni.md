@@ -54,17 +54,17 @@ This document captures my QA scope for WebMsh project and geometry data integrit
 ## 3. Team Members
 | Team Member | Role | Ownership |
 |---|---|---|
-| shravan | QA Engineer | Authentication, Session Management, Security Validation |
-| Dhimant | QA Engineer | Project CRUD, Database Interaction, Validation Testing |
-| Irfan | QA Engineer | Frontend UI, API Integration, State Management |
-| Noel | QA Engineer | End-to-End Workflows, Browser Testing, Reporting |
+| Shravan Sathiyanarayanan | QA Engineer | Authentication, Session Management, Security Validation |
+| Dhimant Kulkarni| QA Engineer | Project CRUD, Database Interaction, Validation Testing |
+| Irfanul Haque Raque | QA Engineer | Frontend UI, API Integration, State Management |
+| Noel Tom | QA Engineer | End-to-End Workflows, Browser Testing, Reporting |
 
 ## 4. Scope
 - In Scope: `project_models.py`, `project_service.py`, `/projects*` APIs, `/info` project count consistency.
 - Out of Scope: auth credential policy internals, frontend route rendering, Playwright report pipeline internals.
 
 ## 5. Assumptions
-- Dhimant tests run with authenticated user fixture.
+- I test run with authenticated user fixture.
 - Temporary DB isolation is active.
 - API server logic is imported through test client fixture.
 
@@ -99,41 +99,297 @@ This document captures my QA scope for WebMsh project and geometry data integrit
 | Review | 0.5 day | Results and remarks |
 
 ## 11. Deliverables
-- Dhimant test plan
-- Dhimant automation scripts
+- Test plan
+- Automation scripts
 - Execution evidence for DB and CRUD validation
 
 ## 12. Assigned Module Description
-Dhimant validates project domain correctness: model input constraints, CRUD endpoints, ownership/404 behaviors, and project metrics reflected in `/info`.
+I validated project domain correctness: model input constraints, CRUD endpoints, ownership/404 behaviors, and project metrics reflected in `/info`.
 
 ## 13. Unit Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| DHI-UT-001 | `project_models.py` | Unit | Name Normalization | Trim project name spaces | Module import | pytest/pydantic | Medium | Major | Local | `"  Project A  "` | Build payload object | Name normalized to `Project A` | To execute | Pass | Positive | [SS-DHI-001] |
-| DHI-UT-002 | `project_models.py` | Unit | Name Validation | Reject blank project name | Same | Same | High | Major | Local | `"   "` | Build payload object | Validation error raised | To execute | Pass | Negative | [SS-DHI-002] |
-| DHI-UT-003 | `project_models.py` | Unit | Box Validation | Reject invalid box width | Same | Same | High | Major | Local | width=-1 | Build `BoxRequest` | Validation error raised | To execute | Pass | Boundary | [SS-DHI-003] |
-| DHI-UT-004 | `project_models.py` | Unit | Sphere Validation | Reject non-positive radius | Same | Same | High | Major | Local | radius=0 | Build `SphereRequest` | Validation error raised | To execute | Pass | Boundary | [SS-DHI-004] |
+
+Wide Markdown tables are often clipped in PDF export. Each case below uses a two-column table so **Expected Result** and evidence columns remain visible.
+
+### DHI-UT-001 — Name Normalization
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-UT-001 |
+| Module Name | `project_models.py` |
+| Test Type | Unit |
+| Feature Name | Name Normalization |
+| Objective | Trim project name spaces |
+| Preconditions | Module import |
+| Dependencies | pytest / pydantic |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local |
+| Test Data | `"  Project A  "` |
+| Detailed Steps | Build payload object |
+| Expected Result | Name normalized to `Project A` |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### DHI-UT-002 — Name Validation
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-UT-002 |
+| Module Name | `project_models.py` |
+| Test Type | Unit |
+| Feature Name | Name Validation |
+| Objective | Reject blank project name |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | `"   "` |
+| Detailed Steps | Build payload object |
+| Expected Result | Validation error raised |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative |
+
+### DHI-UT-003 — Box Validation
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-UT-003 |
+| Module Name | `project_models.py` |
+| Test Type | Unit |
+| Feature Name | Box Validation |
+| Objective | Reject invalid box width |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | width = -1 |
+| Detailed Steps | Build `BoxRequest` |
+| Expected Result | Validation error raised |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Boundary |
+
+### DHI-UT-004 — Sphere Validation
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-UT-004 |
+| Module Name | `project_models.py` |
+| Test Type | Unit |
+| Feature Name | Sphere Validation |
+| Objective | Reject non-positive radius |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | radius = 0 |
+| Detailed Steps | Build `SphereRequest` |
+| Expected Result | Validation error raised |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Boundary |
 
 ![dhimantUnit.png](tests\images\dhimantUnit.png)
 
 ## 14. Integration Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| DHI-IT-001 | Projects API | Integration | Create | Create project with valid payload | Authenticated session | FastAPI TestClient | High | Critical | Local API | name=valid | POST `/projects` | 201 and project id returned | To execute | Pass | Positive | [SS-DHI-005] |
-| DHI-IT-002 | Projects API | Integration | List | List current user projects | Existing project | Same | High | Major | Local API | none | GET `/projects` | Created project present | To execute | Pass | Positive | [SS-DHI-006] |
-| DHI-IT-003 | Projects API | Integration | Rename | Rename project | Existing project | Same | Medium | Major | Local API | new name | PATCH `/projects/{id}` | Name updated in response | To execute | Pass | Positive | [SS-DHI-007] |
-| DHI-IT-004 | Projects API | Integration | Delete | Delete project | Existing project | Same | High | Critical | Local API | project id | DELETE `/projects/{id}` | Deleted summary returned | To execute | Pass | Positive | [SS-DHI-008] |
-| DHI-IT-005 | Projects API | Integration | Not Found | Invalid ID handling | Authenticated user | Same | Medium | Major | Local API | invalid id | GET/PATCH/DELETE invalid id | 404 Project not found | To execute | Pass | Negative | [SS-DHI-009] |
+
+### DHI-IT-001 — Create
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-IT-001 |
+| Module Name | Projects API |
+| Test Type | Integration |
+| Feature Name | Create |
+| Objective | Create project with valid payload |
+| Preconditions | Authenticated session |
+| Dependencies | FastAPI TestClient |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | name = valid |
+| Detailed Steps | POST `/projects` |
+| Expected Result | 201 and project id returned |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### DHI-IT-002 — List
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-IT-002 |
+| Module Name | Projects API |
+| Test Type | Integration |
+| Feature Name | List |
+| Objective | List current user projects |
+| Preconditions | Existing project |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | None |
+| Detailed Steps | GET `/projects` |
+| Expected Result | Created project present |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### DHI-IT-003 — Rename
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-IT-003 |
+| Module Name | Projects API |
+| Test Type | Integration |
+| Feature Name | Rename |
+| Objective | Rename project |
+| Preconditions | Existing project |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | New name |
+| Detailed Steps | PATCH `/projects/{id}` |
+| Expected Result | Name updated in response |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### DHI-IT-004 — Delete
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-IT-004 |
+| Module Name | Projects API |
+| Test Type | Integration |
+| Feature Name | Delete |
+| Objective | Delete project |
+| Preconditions | Existing project |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Project id |
+| Detailed Steps | DELETE `/projects/{id}` |
+| Expected Result | Deleted summary returned |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### DHI-IT-005 — Not Found
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-IT-005 |
+| Module Name | Projects API |
+| Test Type | Integration |
+| Feature Name | Not Found |
+| Objective | Invalid ID handling |
+| Preconditions | Authenticated user |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | Invalid id |
+| Detailed Steps | GET / PATCH / DELETE invalid id |
+| Expected Result | 404 Project not found |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative |
 
 ![dhimantInt.png](tests\images\dhimantInt.png)
 
 ## 15. System Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| DHI-ST-001 | Project Service | System | Ownership | Enforce per-user project isolation | Multi-user setup | API + DB | High | Critical | Local API | user A/B projects | Access user B project as user A | Access denied (404) | To execute | Pass | Authorization | [SS-DHI-010] |
-| DHI-ST-002 | Project Service | System | Geometry Listing | Return project geometry list | Existing geometry records | API + DB | Medium | Major | Local API | project with geometry | GET `/projects/{id}/geometry` | Stable geometry list response | To execute | Pass | Data integrity | [SS-DHI-011] |
-| DHI-ST-003 | DB Consistency | System | Delete Cascade | Ensure child geometry removed with project | Project with geometry | DB FK constraints | High | Critical | Local API | project id | Delete project then re-query geometry | No orphan geometries remain | To execute | Pass | Consistency | [SS-DHI-012] |
-| DHI-ST-004 | Metrics | System | Info Counter | Validate `/info` project count accuracy | Signed-in user | API + DB | Medium | Major | Local API | create 1+ projects | Create then GET `/info` | `project_count` matches persisted count | To execute | Pass | Reporting consistency | [SS-DHI-013] |
+
+### DHI-ST-001 — Ownership
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-ST-001 |
+| Module Name | Project Service |
+| Test Type | System |
+| Feature Name | Ownership |
+| Objective | Enforce per-user project isolation |
+| Preconditions | Multi-user setup |
+| Dependencies | API + DB |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | User A / B projects |
+| Detailed Steps | Access user B project as user A |
+| Expected Result | Access denied (404) |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Authorization |
+
+### DHI-ST-002 — Geometry Listing
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-ST-002 |
+| Module Name | Project Service |
+| Test Type | System |
+| Feature Name | Geometry Listing |
+| Objective | Return project geometry list |
+| Preconditions | Existing geometry records |
+| Dependencies | API + DB |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | Project with geometry |
+| Detailed Steps | GET `/projects/{id}/geometry` |
+| Expected Result | Stable geometry list response |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Data integrity |
+
+### DHI-ST-003 — Delete Cascade
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-ST-003 |
+| Module Name | DB Consistency |
+| Test Type | System |
+| Feature Name | Delete Cascade |
+| Objective | Ensure child geometry removed with project |
+| Preconditions | Project with geometry |
+| Dependencies | DB FK constraints |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Project id |
+| Detailed Steps | Delete project then re-query geometry |
+| Expected Result | No orphan geometries remain |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Consistency |
+
+### DHI-ST-004 — Info Counter
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | DHI-ST-004 |
+| Module Name | Metrics |
+| Test Type | System |
+| Feature Name | Info Counter |
+| Objective | Validate `/info` project count accuracy |
+| Preconditions | Signed-in user |
+| Dependencies | API + DB |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | Create 1+ projects |
+| Detailed Steps | Create then GET `/info` |
+| Expected Result | `project_count` matches persisted count |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Reporting consistency |
 
 ![dhimantSys.png](tests\images\dhimantSys.png)
 

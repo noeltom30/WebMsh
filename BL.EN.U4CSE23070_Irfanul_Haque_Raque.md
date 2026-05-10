@@ -54,10 +54,10 @@ This document defines my QA responsibilities for frontend behavior in WebMsh, in
 ## 3. Team Members
 | Team Member | Role | Ownership |
 |---|---|---|
-| shravan | QA Engineer | Authentication, Session Management, Security Validation |
-| Dhimant | QA Engineer | Project CRUD, Database Interaction, Validation Testing |
-| Irfan | QA Engineer | Frontend UI, API Integration, State Management |
-| Noel | QA Engineer | End-to-End Workflows, Browser Testing, Reporting |
+| Shravan Sathiyanarayanan | QA Engineer | Authentication, Session Management, Security Validation |
+| Dhimant Kulkarni| QA Engineer | Project CRUD, Database Interaction, Validation Testing |
+| Irfanul Haque Raque | QA Engineer | Frontend UI, API Integration, State Management |
+| Noel Tom | QA Engineer | End-to-End Workflows, Browser Testing, Reporting |
 
 ## 4. Scope
 - In Scope: `frontend/src/api.js`, `frontend/src/context/AuthContext.jsx`, route and home smoke checks.
@@ -99,42 +99,297 @@ This document defines my QA responsibilities for frontend behavior in WebMsh, in
 | Evidence curation | 0.5 day | Screenshots + HTML report references |
 
 ## 11. Deliverables
-- Irfan test plan
+- Test plan
 - Frontend member test scripts
 - Frontend execution logs and evidence references
 
 ## 12. Assigned Module Description
-Irfan validates client-side correctness from API invocation to user-visible route/state behavior, ensuring reliable auth-aware UX behavior.
+I validateed client-side correctness from API invocation to user-visible route/state behavior, ensuring reliable auth-aware UX behavior.
 
 ## 13. Unit Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| IRF-UT-001 | `api.js` | Unit | Request Method | Validate signup uses POST | Vitest setup | Vitest/mock fetch | High | Major | Local FE | signup payload | Call `api.signup` with mocked fetch | Request method is POST | To execute | Pass | Positive | [SS-IRF-001] |
-| IRF-UT-002 | `api.js` | Unit | Error Shaping | Validate non-2xx error object | Same | Same | High | Major | Local FE | 401 mock response | Call `api.me` and assert thrown error | Error contains status and body | To execute | Pass | Negative | [SS-IRF-002] |
-| IRF-UT-003 | `api.js` | Unit | Endpoint Builder | Validate dynamic project path | Same | Same | Medium | Major | Local FE | project id | Call project operations and inspect URL | URL structure `/projects/{id}` correct | To execute | Pass | Validation | [SS-IRF-003] |
-| IRF-UT-004 | Auth Context | Unit | Local State | Verify user state set from refresh | Same | RTL + context | Medium | Major | Local FE | mock user | Trigger refresh behavior | Context user state updated | To execute | Pass | State mgmt | [SS-IRF-004] |
 
+Exporting very wide Markdown tables to PDF often clips the right columns (for example **Expected Result**). Each case below uses a narrow two-column layout so all fields print reliably.
+
+### IRF-UT-001 — Request Method
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-UT-001 |
+| Module Name | `api.js` |
+| Test Type | Unit |
+| Feature Name | Request Method |
+| Objective | Validate signup uses POST |
+| Preconditions | Vitest setup |
+| Dependencies | Vitest / mock fetch |
+| Priority | High |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Signup payload |
+| Detailed Steps | Call `api.signup` with mocked fetch |
+| Expected Result | Request method is POST |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### IRF-UT-002 — Error Shaping
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-UT-002 |
+| Module Name | `api.js` |
+| Test Type | Unit |
+| Feature Name | Error Shaping |
+| Objective | Validate non-2xx error object |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | 401 mock response |
+| Detailed Steps | Call `api.me` and assert thrown error |
+| Expected Result | Error contains status and body |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative |
+
+### IRF-UT-003 — Endpoint Builder
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-UT-003 |
+| Module Name | `api.js` |
+| Test Type | Unit |
+| Feature Name | Endpoint Builder |
+| Objective | Validate dynamic project path |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Project id |
+| Detailed Steps | Call project operations and inspect URL |
+| Expected Result | URL structure `/projects/{id}` is correct |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Validation |
+
+### IRF-UT-004 — Local State
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-UT-004 |
+| Module Name | Auth Context |
+| Test Type | Unit |
+| Feature Name | Local State |
+| Objective | Verify user state set from refresh |
+| Preconditions | Same as suite setup |
+| Dependencies | RTL + context |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Mock user |
+| Detailed Steps | Trigger refresh behavior |
+| Expected Result | Context user state updated |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | State management |
 
 ![irfanUnit.png](tests\images\irfanUnit.png)
 
 ## 14. Integration Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| IRF-IT-001 | Auth Context | Integration | Hydration | Populate user on app boot | Mocked `api.me` | RTL/Vitest | High | Critical | Local FE | user object | Render `AuthProvider` and probe state | Email displayed from context | To execute | Pass | Positive | [SS-IRF-005] |
-| IRF-IT-002 | Auth Context | Integration | Signout | Clear user state on signout | Logged-in mock state | Same | High | Major | Local FE | mock logout | Invoke signOut and inspect state | user becomes null | To execute | Pass | State reset | [SS-IRF-006] |
-| IRF-IT-003 | Auth Page | Integration | Form Validation | Reject mismatched passwords | Render signup form | Same | Medium | Major | Local FE | mismatch passwords | Submit signup form | Error banner displayed; no API call | To execute | Pass | Negative | [SS-IRF-007] |
-| IRF-IT-004 | Router Guard | Integration | Protected Route | Redirect unauthenticated users | user=null | react-router | High | Critical | Local FE | route `/profile` | Navigate without auth | Redirect to auth route | To execute | Pass | Security | [SS-IRF-008] |
-| IRF-IT-005 | Router Guard | Integration | Guest Route | Redirect authenticated users away from auth | user set | react-router | Medium | Major | Local FE | route `/auth` | Navigate as authenticated user | Redirect to profile/workspace | To execute | Pass | UX policy | [SS-IRF-009] |
+
+### IRF-IT-001 — Hydration
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-IT-001 |
+| Module Name | Auth Context |
+| Test Type | Integration |
+| Feature Name | Hydration |
+| Objective | Populate user on app boot |
+| Preconditions | Mocked `api.me` |
+| Dependencies | RTL / Vitest |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local FE |
+| Test Data | User object |
+| Detailed Steps | Render `AuthProvider` and probe state |
+| Expected Result | Email displayed from context |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### IRF-IT-002 — Signout
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-IT-002 |
+| Module Name | Auth Context |
+| Test Type | Integration |
+| Feature Name | Signout |
+| Objective | Clear user state on signout |
+| Preconditions | Logged-in mock state |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Mock logout |
+| Detailed Steps | Invoke signOut and inspect state |
+| Expected Result | User becomes null |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | State reset |
+
+### IRF-IT-003 — Form Validation
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-IT-003 |
+| Module Name | Auth Page |
+| Test Type | Integration |
+| Feature Name | Form Validation |
+| Objective | Reject mismatched passwords |
+| Preconditions | Render signup form |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Mismatched passwords |
+| Detailed Steps | Submit signup form |
+| Expected Result | Error banner displayed; no API call |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative |
+
+### IRF-IT-004 — Protected Route
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-IT-004 |
+| Module Name | Router Guard |
+| Test Type | Integration |
+| Feature Name | Protected Route |
+| Objective | Redirect unauthenticated users |
+| Preconditions | user = null |
+| Dependencies | react-router |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local FE |
+| Test Data | Route `/profile` |
+| Detailed Steps | Navigate without auth |
+| Expected Result | Redirect to auth route |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Security |
+
+### IRF-IT-005 — Guest Route
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-IT-005 |
+| Module Name | Router Guard |
+| Test Type | Integration |
+| Feature Name | Guest Route |
+| Objective | Redirect authenticated users away from auth |
+| Preconditions | User set |
+| Dependencies | react-router |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local FE |
+| Test Data | Route `/auth` |
+| Detailed Steps | Navigate as authenticated user |
+| Expected Result | Redirect to profile / workspace |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | UX policy |
 
 ![irfanInt.png](tests\images\irfanInt.png)
 
 ## 15. System Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| IRF-ST-001 | Home UI | System | Branding Visibility | Validate WebMsh branding appears | Vite server running | Playwright | High | Major | Chromium | none | Open home page | Branding/nav visible | To execute | Pass | Smoke | [SS-IRF-010] |
-| IRF-ST-002 | Home UI | System | Page Metadata | Validate page title contains WebMsh | Same | Same | Medium | Minor | Chromium | none | Assert `toHaveTitle(/WebMsh/i)` | Title matches expected branding | To execute | Pass | Browser check | [SS-IRF-011] |
-| IRF-ST-003 | Route UX | System | Basic Route Reachability | Ensure default route loads without crash | Same | Same | High | Major | Chromium | none | Visit `/` and wait for stable DOM | No runtime crash, page interactive | To execute | Pass | Stability | [SS-IRF-012] |
-| IRF-ST-004 | UI Behavior | System | Link Visibility | Ensure brand link is visible/clickable | Same | Same | Medium | Minor | Chromium | none | Check role link `WebMsh` | Link visible and actionable | To execute | Pass | Accessibility | [SS-IRF-013] |
+
+### IRF-ST-001 — Branding Visibility
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-ST-001 |
+| Module Name | Home UI |
+| Test Type | System |
+| Feature Name | Branding Visibility |
+| Objective | Validate WebMsh branding appears |
+| Preconditions | Vite server running |
+| Dependencies | Playwright |
+| Priority | High |
+| Severity | Major |
+| Environment | Chromium |
+| Test Data | None |
+| Detailed Steps | Open home page |
+| Expected Result | Branding / nav visible |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Smoke |
+
+### IRF-ST-002 — Page Metadata
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-ST-002 |
+| Module Name | Home UI |
+| Test Type | System |
+| Feature Name | Page Metadata |
+| Objective | Validate page title contains WebMsh |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Minor |
+| Environment | Chromium |
+| Test Data | None |
+| Detailed Steps | Assert `toHaveTitle(/WebMsh/i)` |
+| Expected Result | Title matches expected branding |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Browser check |
+
+### IRF-ST-003 — Basic Route Reachability
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-ST-003 |
+| Module Name | Route UX |
+| Test Type | System |
+| Feature Name | Basic Route Reachability |
+| Objective | Ensure default route loads without crash |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Chromium |
+| Test Data | None |
+| Detailed Steps | Visit `/` and wait for stable DOM |
+| Expected Result | No runtime crash; page interactive |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Stability |
+
+### IRF-ST-004 — Link Visibility
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | IRF-ST-004 |
+| Module Name | UI Behavior |
+| Test Type | System |
+| Feature Name | Link Visibility |
+| Objective | Ensure brand link is visible / clickable |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Minor |
+| Environment | Chromium |
+| Test Data | None |
+| Detailed Steps | Check role link `WebMsh` |
+| Expected Result | Link visible and actionable |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Accessibility |
 
 ![irfanSys.png](tests\images\irfanSys.png)
 

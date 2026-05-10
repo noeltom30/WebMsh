@@ -108,36 +108,289 @@ This document defines my testing responsibilities for WebMsh, focused on authent
 Member 1 validates WebMsh account security workflows: signup, OTP verification, signin, session creation, logout invalidation, and access control on protected endpoints.
 
 ## 13. Unit Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| SHR-UT-001 | `auth.py` | Unit | Password Policy | Validate short password rejection | Module import success | Python, pytest | High | Major | Local | `short` | Invoke `_password_policy_issues("short", email)` | Issues include minimum length violation | To execute | Pass | Security baseline | [SS-SHR-001] |
-| SHR-UT-002 | `auth.py` | Unit | Password Policy | Validate uppercase requirement | Same | Same | High | Major | Local | `alllowercase123` | Call policy validator | Uppercase requirement reported | To execute | Pass | Negative case | [SS-SHR-002] |
-| SHR-UT-003 | `auth.py` | Unit | Password Policy | Validate numeric requirement | Same | Same | High | Major | Local | `NoDigits@Pass` | Call policy validator | Numeric requirement reported | To execute | Pass | Negative case | [SS-SHR-003] |
-| SHR-UT-004 | `auth.py` | Unit | Password Hashing | Validate hash/verify roundtrip | Same | Same | High | Critical | Local | `ShravanStrong@123` | Hash then verify true/false | True for valid, false for invalid | To execute | Pass | Security core | [SS-SHR-004] |
 
+Wide Markdown tables are often clipped in PDF export. Each case below uses a two-column table so **Expected Result** and later columns stay on the page.
+
+### SHR-UT-001 — Password Policy (length)
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-UT-001 |
+| Module Name | `auth.py` |
+| Test Type | Unit |
+| Feature Name | Password Policy |
+| Objective | Validate short password rejection |
+| Preconditions | Module import success |
+| Dependencies | Python, pytest |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | `short` |
+| Detailed Steps | Invoke `_password_policy_issues("short", email)` |
+| Expected Result | Issues include minimum length violation |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Security baseline |
+
+### SHR-UT-002 — Password Policy (uppercase)
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-UT-002 |
+| Module Name | `auth.py` |
+| Test Type | Unit |
+| Feature Name | Password Policy |
+| Objective | Validate uppercase requirement |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | `alllowercase123` |
+| Detailed Steps | Call policy validator |
+| Expected Result | Uppercase requirement reported |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative case |
+
+### SHR-UT-003 — Password Policy (numeric)
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-UT-003 |
+| Module Name | `auth.py` |
+| Test Type | Unit |
+| Feature Name | Password Policy |
+| Objective | Validate numeric requirement |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local |
+| Test Data | `NoDigits@Pass` |
+| Detailed Steps | Call policy validator |
+| Expected Result | Numeric requirement reported |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative case |
+
+### SHR-UT-004 — Password Hashing
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-UT-004 |
+| Module Name | `auth.py` |
+| Test Type | Unit |
+| Feature Name | Password Hashing |
+| Objective | Validate hash / verify roundtrip |
+| Preconditions | Same as suite setup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local |
+| Test Data | `ShravanStrong@123` |
+| Detailed Steps | Hash then verify true / false |
+| Expected Result | True for valid password, false for invalid |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Security core |
 
 ![shravanUnit.png](tests\images\shravanUnit.png)
 
 ## 14. Integration Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| SHR-IT-001 | Auth API | Integration | Signup | Create account with valid payload | Fresh temp DB | FastAPI TestClient | High | Critical | Local API | email, password | POST `/auth/signup` | Returns next=`verify_signup_otp` and dev OTP | To execute | Pass | Positive | [SS-SHR-005] |
-| SHR-IT-002 | Auth API | Integration | Signup OTP | Verify account by OTP | Prior signup | Same | High | Critical | Local API | email, otp | POST `/auth/signup/verify` | Returns success verification message | To execute | Pass | Positive | [SS-SHR-006] |
-| SHR-IT-003 | Auth API | Integration | Signin | Request signin OTP | Verified account | Same | High | Critical | Local API | email, password | POST `/auth/signin` | Returns next=`otp_required` | To execute | Pass | Positive | [SS-SHR-007] |
-| SHR-IT-004 | Auth API | Integration | Signin OTP | Authenticate with OTP | Prior signin | Same | High | Critical | Local API | email, otp | POST `/auth/signin/otp` | Returns next=`authenticated` and user payload | To execute | Pass | Positive | [SS-SHR-008] |
-| SHR-IT-005 | Auth API | Integration | Invalid Credentials | Reject wrong password | Existing account | Same | High | Major | Local API | wrong password | POST `/auth/signin` | 401 invalid email/password | To execute | Pass | Negative | [SS-SHR-009] |
 
+### SHR-IT-001 — Signup
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-IT-001 |
+| Module Name | Auth API |
+| Test Type | Integration |
+| Feature Name | Signup |
+| Objective | Create account with valid payload |
+| Preconditions | Fresh temp DB |
+| Dependencies | FastAPI TestClient |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Email, password |
+| Detailed Steps | POST `/auth/signup` |
+| Expected Result | Returns next=`verify_signup_otp` and dev OTP |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### SHR-IT-002 — Signup OTP
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-IT-002 |
+| Module Name | Auth API |
+| Test Type | Integration |
+| Feature Name | Signup OTP |
+| Objective | Verify account by OTP |
+| Preconditions | Prior signup |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Email, OTP |
+| Detailed Steps | POST `/auth/signup/verify` |
+| Expected Result | Returns success verification message |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### SHR-IT-003 — Signin
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-IT-003 |
+| Module Name | Auth API |
+| Test Type | Integration |
+| Feature Name | Signin |
+| Objective | Request signin OTP |
+| Preconditions | Verified account |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Email, password |
+| Detailed Steps | POST `/auth/signin` |
+| Expected Result | Returns next=`otp_required` |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### SHR-IT-004 — Signin OTP
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-IT-004 |
+| Module Name | Auth API |
+| Test Type | Integration |
+| Feature Name | Signin OTP |
+| Objective | Authenticate with OTP |
+| Preconditions | Prior signin |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Email, OTP |
+| Detailed Steps | POST `/auth/signin/otp` |
+| Expected Result | Returns next=`authenticated` and user payload |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Positive |
+
+### SHR-IT-005 — Invalid Credentials
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-IT-005 |
+| Module Name | Auth API |
+| Test Type | Integration |
+| Feature Name | Invalid Credentials |
+| Objective | Reject wrong password |
+| Preconditions | Existing account |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | Wrong password |
+| Detailed Steps | POST `/auth/signin` |
+| Expected Result | 401 invalid email/password |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Negative |
 
 ![shravanInt.png](tests\images\shravanInt.png)
 
 ## 15. System Test Cases
-| Test Case ID | Module Name | Test Type | Feature Name | Objective | Preconditions | Dependencies | Priority | Severity | Environment | Test Data | Detailed Steps | Expected Result | Actual Result | Pass/Fail Status | Remarks | Screenshot Placeholder |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| SHR-ST-001 | Auth API | System | Session Cookie | Validate authenticated session after OTP | Authenticated user | API system flow | High | Critical | Local API | valid auth flow | Signup->verify->signin->otp->GET `/auth/me` | `/auth/me` returns 200 with authenticated identity | To execute | Pass | End-to-end | [SS-SHR-010] |
-| SHR-ST-002 | Auth API | System | Logout | Invalidate session on logout | Authenticated session | Same | High | Critical | Local API | session cookie | POST `/auth/logout` then GET `/auth/me` | `/auth/me` returns 401 post logout | To execute | Pass | Session invalidation | [SS-SHR-011] |
-| SHR-ST-003 | Auth API | System | Authorization | Deny protected route without login | No session | Same | High | Critical | Local API | none | GET `/projects` unauthenticated | 401 Authentication required | To execute | Pass | Route protection | [SS-SHR-012] |
-| SHR-ST-004 | Auth API | System | Profile Access | Profile visible only for logged-in users | Session/no-session variants | Same | Medium | Major | Local API | two scenarios | Call `/auth/profile` with/without cookie | 200 for authenticated; 401 for unauthenticated | To execute | Pass | Security boundary | [SS-SHR-013] |
 
+### SHR-ST-001 — Session Cookie
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-ST-001 |
+| Module Name | Auth API |
+| Test Type | System |
+| Feature Name | Session Cookie |
+| Objective | Validate authenticated session after OTP |
+| Preconditions | Authenticated user |
+| Dependencies | API system flow |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Valid auth flow |
+| Detailed Steps | Signup → verify → signin → OTP → GET `/auth/me` |
+| Expected Result | `/auth/me` returns 200 with authenticated identity |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | End-to-end |
+
+### SHR-ST-002 — Logout
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-ST-002 |
+| Module Name | Auth API |
+| Test Type | System |
+| Feature Name | Logout |
+| Objective | Invalidate session on logout |
+| Preconditions | Authenticated session |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | Session cookie |
+| Detailed Steps | POST `/auth/logout` then GET `/auth/me` |
+| Expected Result | `/auth/me` returns 401 after logout |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Session invalidation |
+
+### SHR-ST-003 — Authorization
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-ST-003 |
+| Module Name | Auth API |
+| Test Type | System |
+| Feature Name | Authorization |
+| Objective | Deny protected route without login |
+| Preconditions | No session |
+| Dependencies | Same as suite setup |
+| Priority | High |
+| Severity | Critical |
+| Environment | Local API |
+| Test Data | None |
+| Detailed Steps | GET `/projects` unauthenticated |
+| Expected Result | 401 Authentication required |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Route protection |
+
+### SHR-ST-004 — Profile Access
+
+| Attribute | Details |
+| --- | --- |
+| Test Case ID | SHR-ST-004 |
+| Module Name | Auth API |
+| Test Type | System |
+| Feature Name | Profile Access |
+| Objective | Profile visible only for logged-in users |
+| Preconditions | Session / no-session variants |
+| Dependencies | Same as suite setup |
+| Priority | Medium |
+| Severity | Major |
+| Environment | Local API |
+| Test Data | Two scenarios |
+| Detailed Steps | Call `/auth/profile` with / without cookie |
+| Expected Result | 200 when authenticated; 401 when unauthenticated |
+| Actual Result | To execute |
+| Pass/Fail Status | Pass |
+| Remarks | Security boundary |
 
 ![shravanSys.png](tests\images\shravanSys.png)
 
