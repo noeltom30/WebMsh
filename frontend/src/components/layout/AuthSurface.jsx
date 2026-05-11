@@ -13,7 +13,7 @@ export default function AuthSurface({
   return (
     <div
       className={joinClassNames(
-        'w-full rounded-2xl border border-white/10 bg-[linear-gradient(165deg,rgba(15,23,42,0.9),rgba(15,23,42,0.8))] p-6 shadow-soft sm:p-8',
+        'w-full rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(11,15,23,0.92),rgba(11,15,23,0.78))] p-6 shadow-soft sm:p-8',
         className,
       )}
     >

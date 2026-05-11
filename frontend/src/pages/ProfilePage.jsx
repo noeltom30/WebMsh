@@ -18,7 +18,7 @@ function formatDate(value) {
 
 function StatTile({ label, value }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-950/60 p-4 transition hover:border-cyan-300/35">
+    <div className="rounded-xl border border-slate-600/70 bg-slate-950/60 p-4 transition hover:border-cyan-300/45">
       <dt className="text-xs uppercase tracking-[0.12em] text-slate-400">{label}</dt>
       <dd className="mt-2 text-sm font-medium text-slate-100">{value}</dd>
     </div>
@@ -46,7 +46,7 @@ function ProjectCard({
   onSaveRename,
 }) {
   return (
-    <article className="rounded-2xl border border-white/10 bg-slate-950/55 p-5 shadow-soft">
+    <article className="rounded-2xl border border-slate-600/65 bg-slate-950/55 p-5 shadow-soft">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-lg font-semibold text-white">{project.name}</p>
@@ -82,7 +82,7 @@ function ProjectCard({
       </div>
 
       {renameActive && (
-        <div className="mt-4 grid gap-3 rounded-xl border border-white/10 bg-slate-900/60 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+          <div className="mt-4 grid gap-3 rounded-xl border border-slate-600/65 bg-slate-900/60 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <InputField
             id={`rename-project-${project.id}`}
             label="Project Name"
@@ -366,8 +366,12 @@ export default function ProfilePage() {
         old_password: oldPassword,
         new_password: newPassword,
       })
-      setPasswordOtpPending(true)
-      setPasswordOtp('')
+      if (response?.next === 'password_change_otp') {
+        setPasswordOtpPending(true)
+        setPasswordOtp('')
+      } else {
+        resetPasswordChangeForm()
+      }
       setPasswordNotice(response?.message || 'A verification code was sent to your email.')
     } catch (requestError) {
       if (requestError?.status === 401) {
@@ -424,7 +428,7 @@ export default function ProfilePage() {
       <main className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8">
         <div className="grid gap-6 xl:grid-cols-[1.35fr,0.65fr]">
           <section className="space-y-6">
-            <section className="rounded-3xl border border-white/10 bg-[linear-gradient(165deg,rgba(15,23,42,0.92),rgba(15,23,42,0.78))] p-6 shadow-soft">
+            <section className="rounded-3xl border border-slate-500/40 bg-[linear-gradient(165deg,rgba(15,23,42,0.94),rgba(15,23,42,0.78))] p-6 shadow-soft">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-cyan-200">User Profile</p>
@@ -456,7 +460,7 @@ export default function ProfilePage() {
               </dl>
 
               {showCreateProject && (
-                <div className="mt-6 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4">
+                <div className="mt-6 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-4">
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
                     <InputField
                       id="new-project-name"
@@ -476,7 +480,7 @@ export default function ProfilePage() {
               )}
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-[linear-gradient(170deg,rgba(15,23,42,0.88),rgba(15,23,42,0.72))] p-6 shadow-soft">
+            <section className="rounded-3xl border border-slate-500/40 bg-[linear-gradient(170deg,rgba(15,23,42,0.9),rgba(15,23,42,0.72))] p-6 shadow-soft">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-cyan-200">Projects</p>
@@ -487,7 +491,7 @@ export default function ProfilePage() {
 
               <div className="mt-6 space-y-4">
                 {projects.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-slate-950/50 p-6 text-sm text-slate-300">
+                  <div className="rounded-2xl border border-dashed border-slate-600/75 bg-slate-950/50 p-6 text-sm text-slate-300">
                     No projects yet. Create your first project to start storing geometry persistently.
                   </div>
                 )}
@@ -518,7 +522,7 @@ export default function ProfilePage() {
           </section>
 
           <aside className="space-y-6">
-            <section className="rounded-3xl border border-white/10 bg-[linear-gradient(170deg,rgba(15,23,42,0.88),rgba(15,23,42,0.72))] p-5 shadow-soft">
+            <section className="rounded-3xl border border-slate-500/40 bg-[linear-gradient(170deg,rgba(15,23,42,0.9),rgba(15,23,42,0.72))] p-5 shadow-soft">
               <h2 className="text-lg font-semibold text-white">Account Security</h2>
               <p className="mt-2 text-sm text-slate-300">
                 Protect this workspace with authenticator-based verification.
@@ -531,7 +535,7 @@ export default function ProfilePage() {
                   </Button>
 
                   {setupData && (
-                    <div className="space-y-3 rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                    <div className="space-y-3 rounded-xl border border-slate-600/70 bg-slate-950/60 p-4">
                       <p className="text-xs text-slate-300">Authenticator Secret</p>
                       <code className="block overflow-x-auto rounded bg-slate-900 p-2 text-xs text-slate-200">
                         {setupData.secret}
@@ -575,7 +579,7 @@ export default function ProfilePage() {
               )}
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-[linear-gradient(170deg,rgba(15,23,42,0.88),rgba(15,23,42,0.72))] p-5 shadow-soft">
+              <section className="rounded-3xl border border-slate-500/40 bg-[linear-gradient(170deg,rgba(15,23,42,0.9),rgba(15,23,42,0.72))] p-5 shadow-soft">
               <h2 className="text-lg font-semibold text-white">Change Password</h2>
               <p className="mt-2 text-sm text-slate-300">
                 Confirm your current password, verify the email OTP, and we will revoke your other active sessions for safety.
@@ -587,7 +591,7 @@ export default function ProfilePage() {
               </div>
 
               {!user?.has_password && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/60 p-4 text-sm text-slate-300">
+                <div className="mt-4 rounded-xl border border-slate-600/70 bg-slate-950/60 p-4 text-sm text-slate-300">
                   This account currently signs in with Google only, so there is no local password to rotate yet.
                 </div>
               )}
@@ -616,7 +620,7 @@ export default function ProfilePage() {
                   />
 
                   {newPassword && (
-                    <div className="rounded-xl border border-white/10 bg-slate-950/60 p-3">
+                    <div className="rounded-xl border border-slate-600/70 bg-slate-950/60 p-3">
                       <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.14em] text-slate-300">
                         <span>Password Strength</span>
                         <span>{passwordStrength}</span>
@@ -646,7 +650,7 @@ export default function ProfilePage() {
                   </Button>
 
                   {passwordOtpPending && (
-                    <div className="space-y-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/10 p-4">
+                    <div className="space-y-3 rounded-2xl border border-cyan-300/30 bg-cyan-400/10 p-4">
                       <InputField
                         id="password-change-otp"
                         label="Email Verification Code"
@@ -679,7 +683,7 @@ export default function ProfilePage() {
               )}
             </section>
 
-            <section className="rounded-3xl border border-white/10 bg-[linear-gradient(170deg,rgba(15,23,42,0.88),rgba(15,23,42,0.72))] p-5 shadow-soft">
+            <section className="rounded-3xl border border-slate-500/40 bg-[linear-gradient(170deg,rgba(15,23,42,0.9),rgba(15,23,42,0.72))] p-5 shadow-soft">
               <h2 className="text-lg font-semibold text-white">Session</h2>
               <p className="mt-2 text-sm text-slate-300">
                 Stay in control of your authenticated session and project access.

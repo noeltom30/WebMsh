@@ -8,6 +8,7 @@ import InputField from '../components/ui/InputField'
 import PasswordField from '../components/ui/PasswordField'
 import { api } from '../api'
 import { AUTH_ERROR_MESSAGES, getPasswordStrengthScore, strengthLabel } from '../utils/auth'
+import './AuthModern.css'
 
 function safeReturnTarget(raw) {
   if (!raw || !raw.startsWith('/')) return '/workspace'
@@ -152,31 +153,32 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6">
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr,0.95fr]">
+    <div className="auth-modern-page">
+      <div className="auth-modern-shell">
         <AuthBrandPanel />
 
-        <section className="flex items-center">
+        <section className="auth-modern-stage">
           <AuthSurface
+            className="auth-modern-surface"
             title="Create Account"
             subtitle="Start your secure WebMsh workflow in under a minute."
             badges={['Strong password policy', 'Email verification', 'Session security']}
             footer={(
               <>
                 Already have an account?{' '}
-                <Link className="font-semibold text-cyan-200 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" to={`/signin?returnTo=${encodeURIComponent(returnTo)}`}>
+                <Link className="auth-modern-link" to={`/signin?returnTo=${encodeURIComponent(returnTo)}`}>
                   Sign in
                 </Link>
               </>
             )}
           >
-            <div className="space-y-3" aria-live="polite">
+            <div className="auth-modern-alerts space-y-3" aria-live="polite">
               <AlertBanner tone="error">{error}</AlertBanner>
               <AlertBanner tone="info">{notice}</AlertBanner>
             </div>
 
             {step === 'credentials' && (
-              <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleSubmit}>
                 <InputField
                   id="signup-name"
                   label="Full Name"
@@ -204,9 +206,9 @@ export default function SignUpPage() {
                   required
                   hint={`Strength: ${strengthLabel(passwordScore)} (${passwordScore}/5)`}
                 />
-                <div className="h-2 w-full rounded-full bg-slate-800">
+                <div className="auth-modern-strength">
                   <div
-                    className="h-2 rounded-full bg-cyan-400 transition-all"
+                    className="auth-modern-strength-fill"
                     style={{ width: `${Math.max(10, passwordScore * 20)}%` }}
                   />
                 </div>
@@ -219,13 +221,13 @@ export default function SignUpPage() {
                   required
                 />
 
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Creating Account...' : 'Create Account'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="auth-modern-btn-muted w-full"
                   disabled={busy}
                   onClick={handleGoogleSignUp}
                 >
@@ -235,7 +237,7 @@ export default function SignUpPage() {
             )}
 
             {step === 'verify_email' && (
-              <form className="mt-6 space-y-4" onSubmit={handleVerifyOtp}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleVerifyOtp}>
                 <InputField
                   id="signup-otp"
                   label="Email Verification Code"
@@ -246,10 +248,10 @@ export default function SignUpPage() {
                   maxLength={6}
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Verifying...' : 'Verify Email'}
                 </Button>
-                <Button type="button" variant="ghost" className="w-full" disabled={busy} onClick={handleResend}>
+                <Button type="button" variant="ghost" className="auth-modern-btn-muted w-full" disabled={busy} onClick={handleResend}>
                   Resend verification code
                 </Button>
               </form>

@@ -15,6 +15,7 @@ python .\app\main.py
 
 - `WEBMSH_AUTH_SECRET`: secret used to hash OTP/session tokens.
 - `WEBMSH_DEBUG_OTP`: set `1` to include dev OTP in API responses (default `0`).
+- `WEBMSH_OTP_ENABLED`: set `0` to disable OTP verification flows.
 - `WEBMSH_SESSION_COOKIE_SECURE`: set `1` in HTTPS deployments.
 - `WEBMSH_FRONTEND_URL`: frontend URL for OAuth redirects (default `http://localhost:5173`).
 - `WEBMSH_OFFICIAL_EMAIL`: official sender identity.

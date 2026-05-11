@@ -9,6 +9,7 @@ import PasswordField from '../components/ui/PasswordField'
 import { api } from '../api'
 import { useAuth } from '../context/useAuth'
 import { AUTH_ERROR_MESSAGES } from '../utils/auth'
+import './AuthModern.css'
 
 const REMEMBER_EMAIL_KEY = 'webmsh_remember_email'
 
@@ -244,31 +245,32 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6">
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr,0.95fr]">
+    <div className="auth-modern-page">
+      <div className="auth-modern-shell">
         <AuthBrandPanel />
 
-        <section className="flex items-center">
+        <section className="auth-modern-stage">
           <AuthSurface
+            className="auth-modern-surface"
             title="Sign In"
             subtitle="Access your secure geometry and meshing workspace."
             badges={['Email OTP', 'Optional 2FA', 'Google OAuth']}
             footer={(
               <>
                 Don&apos;t have an account?{' '}
-                <Link className="font-semibold text-cyan-200 hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" to="/signup">
+                <Link className="auth-modern-link" to="/signup">
                   Create one
                 </Link>
               </>
             )}
           >
-            <div className="space-y-3" aria-live="polite">
+            <div className="auth-modern-alerts space-y-3" aria-live="polite">
               <AlertBanner tone="error">{error}</AlertBanner>
               <AlertBanner tone="info">{notice}</AlertBanner>
             </div>
 
             {step === 'credentials' && (
-              <form className="mt-6 space-y-4" onSubmit={handleCredentialsSubmit}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleCredentialsSubmit}>
                 <InputField
                   id="signin-email"
                   label="Email"
@@ -294,26 +296,26 @@ export default function SignInPage() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(event) => setRememberMe(event.target.checked)}
-                      className="h-4 w-4 rounded border border-white/20 bg-slate-900 focus-visible:ring-2 focus-visible:ring-cyan-300"
+                      className="h-4 w-4 rounded border border-white/20 bg-slate-900"
                     />
                     Remember me
                   </label>
                   <button
                     type="button"
                     onClick={() => setNotice('Password reset endpoint is not connected yet.')}
-                    className="text-sm text-cyan-200 transition hover:text-cyan-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+                    className="text-sm text-slate-300 transition hover:text-slate-100 focus-visible:outline-none"
                   >
                     Forgot password?
                   </button>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Signing In...' : 'Sign In'}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="auth-modern-btn-muted w-full"
                   disabled={busy}
                   onClick={handleGoogleSignIn}
                 >
@@ -323,7 +325,7 @@ export default function SignInPage() {
             )}
 
             {step === 'verify_email' && (
-              <form className="mt-6 space-y-4" onSubmit={handleVerifyEmailOtp}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleVerifyEmailOtp}>
                 <InputField
                   id="verify-email-otp"
                   label="Email Verification Code"
@@ -334,13 +336,13 @@ export default function SignInPage() {
                   maxLength={6}
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Verifying...' : 'Verify Email'}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full"
+                  className="auth-modern-btn-muted w-full"
                   disabled={busy}
                   onClick={() => handleResend('signup')}
                 >
@@ -350,7 +352,7 @@ export default function SignInPage() {
             )}
 
             {step === 'otp' && (
-              <form className="mt-6 space-y-4" onSubmit={handleVerifySigninOtp}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleVerifySigninOtp}>
                 <InputField
                   id="signin-otp"
                   label="One-Time Password"
@@ -361,13 +363,13 @@ export default function SignInPage() {
                   maxLength={6}
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Checking...' : 'Continue'}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full"
+                  className="auth-modern-btn-muted w-full"
                   disabled={busy}
                   onClick={() => handleResend('login')}
                 >
@@ -377,7 +379,7 @@ export default function SignInPage() {
             )}
 
             {step === 'totp' && (
-              <form className="mt-6 space-y-4" onSubmit={handleVerifyTotp}>
+              <form className="auth-modern-form space-y-4" onSubmit={handleVerifyTotp}>
                 <InputField
                   id="signin-totp"
                   label="Authenticator Code"
@@ -388,7 +390,7 @@ export default function SignInPage() {
                   maxLength={6}
                   required
                 />
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="submit" className="auth-modern-btn-primary w-full" disabled={busy}>
                   {busy ? 'Verifying...' : 'Finish Sign In'}
                 </Button>
               </form>

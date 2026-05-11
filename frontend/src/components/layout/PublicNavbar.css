@@ -1,0 +1,122 @@
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 18px 20px 0;
+}
+
+.landing-nav-shell {
+  margin: 0 auto;
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(7, 9, 12, 0.88), rgba(7, 9, 12, 0.72));
+  backdrop-filter: blur(12px);
+}
+
+.landing-brand {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #f7fbff;
+  text-decoration: none;
+}
+
+.landing-nav-center {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-nav-link {
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #a7b0c2;
+  text-decoration: none;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.landing-nav-link:hover,
+.landing-nav-link.active {
+  color: #f8fbff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-theme-toggle,
+.landing-nav-btn {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.landing-theme-toggle {
+  display: none;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #d9deea;
+  cursor: pointer;
+}
+
+.landing-theme-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.landing-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 0 12px;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.landing-nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+.landing-nav-btn-primary {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, #ffffff, #ebf2ff);
+  color: #11131a;
+}
+
+.landing-nav-btn-muted {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: #d9deea;
+}
+
+@media (min-width: 760px) {
+  .landing-header {
+    padding: 20px 28px 0;
+  }
+
+  .landing-nav-center {
+    display: flex;
+  }
+
+  .landing-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .landing-nav-btn {
+    padding: 0 14px;
+  }
+}

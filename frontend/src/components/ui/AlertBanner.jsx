@@ -3,9 +3,9 @@ function joinClassNames(...parts) {
 }
 
 const TONE_CLASSES = {
-  info: 'border-indigo-300/30 bg-indigo-500/10 text-indigo-100',
-  success: 'border-emerald-300/30 bg-emerald-500/10 text-emerald-100',
-  error: 'border-rose-300/35 bg-rose-500/10 text-rose-100',
+  info: 'border-cyan-300/35 bg-cyan-400/10 text-cyan-100',
+  success: 'border-emerald-300/35 bg-emerald-500/12 text-emerald-100',
+  error: 'border-rose-300/40 bg-rose-500/12 text-rose-100',
 }
 
 export default function AlertBanner({ tone = 'info', children }) {
@@ -14,7 +14,7 @@ export default function AlertBanner({ tone = 'info', children }) {
   return (
     <div
       className={joinClassNames(
-        'rounded-xl border px-3 py-2 text-sm',
+        'rounded-xl border px-3 py-2.5 text-sm',
         TONE_CLASSES[tone] || TONE_CLASSES.info,
       )}
       role={tone === 'error' ? 'alert' : 'status'}

@@ -123,14 +123,26 @@ function AuthPage() {
 
     try {
       setBusy(true)
+      const normalizedEmail = signupEmail.trim().toLowerCase()
       const response = await api.signup({
-        email: signupEmail.trim().toLowerCase(),
+        email: normalizedEmail,
         password: signupPassword,
         full_name: fullName.trim() || null,
       })
-      setPendingEmail(signupEmail.trim().toLowerCase())
-      setStep('signup_otp')
-      applyResponseNotice(response)
+      if (response?.next === 'verify_signup_otp') {
+        setPendingEmail(normalizedEmail)
+        setStep('signup_otp')
+        applyResponseNotice(response)
+        return
+      }
+      setMode('signin')
+      setStep('credentials')
+      setPendingEmail('')
+      setOtpCode('')
+      setTotpCode('')
+      setMfaToken('')
+      setSigninEmail(normalizedEmail)
+      setNotice(response?.message || 'Account created. You can now sign in securely.')
     } catch (requestError) {
       const detail = requestError?.body?.detail
       if (detail?.issues?.length) {
@@ -176,8 +188,15 @@ function AuthPage() {
       if (response?.next === 'verify_signup_otp') {
         setMode('signup')
         setStep('signup_otp')
-      } else {
+      } else if (response?.next === 'otp_required') {
         setStep('signin_otp')
+      } else if (response?.next === 'totp_required') {
+        setMfaToken(response?.mfa_token || '')
+        setStep('signin_totp')
+      } else if (response?.next === 'authenticated') {
+        applyResponseNotice(response)
+        await finalizeAuthentication(response?.user || null)
+        return
       }
       applyResponseNotice(response)
     } catch (requestError) {
@@ -250,7 +269,7 @@ function AuthPage() {
           <p>Sign in with email verification or Google OAuth, then manage projects from a persistent profile dashboard.</p>
           <ul>
             <li>Persistent project storage per account</li>
-            <li>Short-lived OTP verification codes</li>
+            {authConfig?.otp_enabled !== false && <li>Short-lived OTP verification codes</li>}
             <li>TOTP authenticator-based 2FA</li>
             <li>Secure HttpOnly session cookies</li>
             {authConfig?.official_email && <li>Official OTP sender: {authConfig.official_email}</li>}

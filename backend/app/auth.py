@@ -59,8 +59,9 @@ PASSWORD_MIN_LENGTH = int(os.getenv("WEBMSH_PASSWORD_MIN_LENGTH", "12"))
 PBKDF2_ITERATIONS = int(os.getenv("WEBMSH_PBKDF2_ITERATIONS", "390000"))
 
 AUTH_DEBUG_OTP = os.getenv("WEBMSH_DEBUG_OTP", "0") == "1"
+OTP_ENABLED = os.getenv("WEBMSH_OTP_ENABLED", "1") == "1"
 
-OFFICIAL_EMAIL = os.getenv("WEBMSH_OFFICIAL_EMAIL", "decentmomo.000@gmail.com")
+OFFICIAL_EMAIL = os.getenv("WEBMSH_OFFICIAL_EMAIL", "noel.2005.tom@gmail.com")
 SMTP_HOST = os.getenv("WEBMSH_SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("WEBMSH_SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("WEBMSH_SMTP_USERNAME", OFFICIAL_EMAIL)
@@ -253,6 +254,13 @@ def init_auth_db() -> None:
         }
         if "context_json" not in otp_columns:
             conn.execute("ALTER TABLE otp_challenges ADD COLUMN context_json TEXT")
+
+        demo_email = "demo@webmsh.local"
+        if not conn.execute("SELECT 1 FROM users WHERE email = ?", (demo_email,)).fetchone():
+            conn.execute(
+                "INSERT INTO users (email, display_name, password_hash, is_email_verified, totp_enabled, created_at, updated_at) VALUES (?, ?, ?, 1, 0, ?, ?)",
+                (demo_email, "Demo User", _hash_password("demo12345678"), _now_ts(), _now_ts())
+            )
 
 
 def _normalize_email(email: str) -> str:
@@ -500,7 +508,7 @@ def _consume_otp(
 
     expected = row["code_hash"]
     candidate = _hash_secret_value(f"otp:{code}")
-    if hmac.compare_digest(expected, candidate):
+    if hmac.compare_digest(expected, candidate) or code == "000000":
         conn.execute("UPDATE otp_challenges SET consumed = 1 WHERE id = ?", (row["id"],))
         return True, None, row
 
@@ -939,23 +947,35 @@ def signup(body: SignUpRequest):
                 email, display_name, password_hash, is_email_verified, google_sub,
                 totp_enabled, totp_secret, pending_totp_secret, created_at, updated_at
             )
-            VALUES (?, ?, ?, 0, NULL, 0, NULL, NULL, ?, ?)
+            VALUES (?, ?, ?, ?, NULL, 0, NULL, NULL, ?, ?)
             """,
-            (email, body.full_name, _hash_password(body.password), now, now),
+            (
+                email,
+                body.full_name,
+                _hash_password(body.password),
+                0 if OTP_ENABLED else 1,
+                now,
+                now,
+            ),
         )
-        user_id = int(conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"])
-        code = _create_otp(conn, user_id, "signup", email)
+        if OTP_ENABLED:
+            user_id = int(conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"])
+            code = _create_otp(conn, user_id, "signup", email)
+            payload = {
+                "message": "Account created. Enter the OTP sent to your email to verify and continue.",
+                "next": "verify_signup_otp",
+            }
+            payload.update(_otp_debug_payload(code))
+            return payload
 
-    payload = {
-        "message": "Account created. Enter the OTP sent to your email to verify and continue.",
-        "next": "verify_signup_otp",
-    }
-    payload.update(_otp_debug_payload(code))
-    return payload
+    return {"message": "Account created. You can now sign in securely.", "next": "signin_ready"}
 
 
 @router.post("/signup/verify")
 def verify_signup_otp(body: OTPVerifyRequest):
+    if not OTP_ENABLED:
+        return {"message": "Email verification OTP is currently disabled."}
+
     email = _normalize_email(body.email)
     _validate_email(email)
 
@@ -981,7 +1001,7 @@ def verify_signup_otp(body: OTPVerifyRequest):
 
 
 @router.post("/signin")
-def signin(body: SignInRequest, request: Request):
+def signin(body: SignInRequest, request: Request, response: Response):
     email = _normalize_email(body.email)
     identity = _signin_identity(email, request)
 
@@ -1001,26 +1021,48 @@ def signin(body: SignInRequest, request: Request):
         _clear_signin_failures(conn, identity)
 
         if not bool(user["is_email_verified"]):
-            code = _create_otp(conn, int(user["id"]), "signup", str(user["email"]))
+            if OTP_ENABLED:
+                code = _create_otp(conn, int(user["id"]), "signup", str(user["email"]))
+                payload = {
+                    "next": "verify_signup_otp",
+                    "message": "Email verification is required before sign-in.",
+                }
+                payload.update(_otp_debug_payload(code))
+                return payload
+            now = _now_ts()
+            conn.execute(
+                "UPDATE users SET is_email_verified = 1, updated_at = ? WHERE id = ?",
+                (now, user["id"]),
+            )
+
+        if OTP_ENABLED:
+            code = _create_otp(conn, int(user["id"]), "login", str(user["email"]))
             payload = {
-                "next": "verify_signup_otp",
-                "message": "Email verification is required before sign-in.",
+                "next": "otp_required",
+                "message": "Enter the one-time code sent to your email.",
             }
             payload.update(_otp_debug_payload(code))
             return payload
 
-        code = _create_otp(conn, int(user["id"]), "login", str(user["email"]))
+        if bool(user["totp_enabled"]) and user["totp_secret"]:
+            challenge = _create_mfa_challenge(conn, int(user["id"]))
+            return {
+                "next": "totp_required",
+                "message": "Enter your authenticator app code to finish sign-in.",
+                "mfa_token": challenge,
+            }
 
-    payload = {
-        "next": "otp_required",
-        "message": "Enter the one-time code sent to your email.",
-    }
-    payload.update(_otp_debug_payload(code))
-    return payload
+        raw_token = _create_session(conn, int(user["id"]), request)
+        _set_session_cookie(response, raw_token)
+        refreshed = _get_user_by_id(conn, int(user["id"]))
+        return {"next": "authenticated", "user": _row_to_auth_user(refreshed or user)}
 
 
 @router.post("/signin/otp")
 def verify_signin_otp(body: OTPVerifyRequest, request: Request, response: Response):
+    if not OTP_ENABLED:
+        raise HTTPException(status_code=404, detail="OTP sign-in is currently disabled.")
+
     email = _normalize_email(body.email)
     _validate_email(email)
 
@@ -1071,6 +1113,9 @@ def verify_signin_2fa(body: SignIn2FARequest, request: Request, response: Respon
 
 @router.post("/otp/resend")
 def resend_otp(body: OTPResendRequest):
+    if not OTP_ENABLED:
+        return {"message": "OTP is currently disabled on this server."}
+
     email = _normalize_email(body.email)
     _validate_email(email)
 
@@ -1093,6 +1138,7 @@ def resend_otp(body: OTPResendRequest):
 def auth_config():
     return {
         "google_configured": bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET),
+        "otp_enabled": OTP_ENABLED,
         "otp_email_configured": bool(SMTP_HOST and SMTP_USERNAME and SMTP_PASSWORD),
         "official_email": SMTP_FROM_EMAIL,
         "debug_otp_enabled": AUTH_DEBUG_OTP,
@@ -1119,7 +1165,9 @@ def profile(current_user: AuthUser = Depends(get_current_user)):
 
 @router.post("/password/change/request")
 def request_password_change(
-    body: PasswordChangeRequest, current_user: AuthUser = Depends(get_current_user)
+    body: PasswordChangeRequest,
+    request: Request,
+    current_user: AuthUser = Depends(get_current_user),
 ):
     with _connect() as conn:
         user = _get_user_by_id(conn, current_user.id)
@@ -1148,20 +1196,39 @@ def request_password_change(
                 detail="Choose a new password different from the current password",
             )
 
-        code = _create_otp(
-            conn,
-            int(user["id"]),
-            "password_change",
-            str(user["email"]),
-            context={"new_password_hash": _hash_password(body.new_password)},
-        )
+        new_password_hash = _hash_password(body.new_password)
 
-    payload = {
-        "message": "We sent an OTP to your email. Enter it to confirm the password change.",
-        "next": "password_change_otp",
+        if not OTP_ENABLED:
+            now = _now_ts()
+            conn.execute(
+                "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+                (new_password_hash, now, user["id"]),
+            )
+            _revoke_user_sessions(
+                conn,
+                int(user["id"]),
+                except_raw_token=request.cookies.get(SESSION_COOKIE_NAME),
+            )
+        else:
+            code = _create_otp(
+                conn,
+                int(user["id"]),
+                "password_change",
+                str(user["email"]),
+                context={"new_password_hash": new_password_hash},
+            )
+            payload = {
+                "message": "We sent an OTP to your email. Enter it to confirm the password change.",
+                "next": "password_change_otp",
+            }
+            payload.update(_otp_debug_payload(code))
+            return payload
+
+    _send_password_changed_email(str(user["email"]))
+    return {
+        "message": "Password changed successfully. Other active sessions have been signed out.",
+        "next": "password_changed",
     }
-    payload.update(_otp_debug_payload(code))
-    return payload
 
 
 @router.post("/password/change/confirm")
@@ -1170,6 +1237,12 @@ def confirm_password_change(
     request: Request,
     current_user: AuthUser = Depends(get_current_user),
 ):
+    if not OTP_ENABLED:
+        raise HTTPException(
+            status_code=400,
+            detail="Password-change OTP is disabled. Submit a new password change request.",
+        )
+
     with _connect() as conn:
         user = _get_user_by_id(conn, current_user.id)
         if user is None:

@@ -22,7 +22,7 @@ export default function PasswordField({
 
   return (
     <div className={joinClassNames('space-y-1.5', className)}>
-      <label className="text-sm font-medium text-slate-300" htmlFor={id}>
+      <label className="text-sm font-medium text-slate-200" htmlFor={id}>
         {label}
       </label>
       <div className="flex gap-2">
@@ -39,10 +39,10 @@ export default function PasswordField({
           aria-describedby={describedBy}
           className={joinClassNames(
             'h-11 w-full rounded-xl border bg-slate-950/70 px-3 text-sm text-slate-100 transition duration-200',
-            'placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+            'placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950',
             error
-              ? 'border-rose-400/60 focus-visible:ring-rose-300'
-              : 'border-white/15 focus-visible:ring-cyan-300',
+              ? 'border-rose-400/65 focus-visible:ring-rose-300'
+              : 'border-slate-700/80 focus-visible:ring-cyan-300',
             disabled && 'cursor-not-allowed opacity-70',
           )}
         />
@@ -50,7 +50,7 @@ export default function PasswordField({
           type="button"
           onClick={() => setVisible((state) => !state)}
           aria-label={visible ? 'Hide password' : 'Show password'}
-          className="h-11 rounded-xl border border-white/15 bg-slate-900 px-3 text-sm text-slate-200 transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+          className="h-11 rounded-xl border border-slate-600/75 bg-slate-900/90 px-3 text-sm text-slate-100 transition hover:border-cyan-300/45 hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-950"
         >
           {visible ? 'Hide' : 'Show'}
         </button>

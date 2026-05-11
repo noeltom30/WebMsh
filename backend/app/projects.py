@@ -128,7 +128,7 @@ def remove_project_geometry(
 
 
 @router.post("/projects/{project_id}/geometry/box", response_model=GeometryRecord)
-def post_box(
+async def post_box(
     project_id: int,
     body: BoxRequest,
     current_user: AuthUser = Depends(get_current_user),
@@ -150,7 +150,7 @@ def post_box(
 
 
 @router.post("/projects/{project_id}/geometry/sphere", response_model=GeometryRecord)
-def post_sphere(
+async def post_sphere(
     project_id: int,
     body: SphereRequest,
     current_user: AuthUser = Depends(get_current_user),
@@ -165,7 +165,7 @@ def post_sphere(
 
 
 @router.post("/projects/{project_id}/geometry/cylinder", response_model=GeometryRecord)
-def post_cylinder(
+async def post_cylinder(
     project_id: int,
     body: CylinderRequest,
     current_user: AuthUser = Depends(get_current_user),
