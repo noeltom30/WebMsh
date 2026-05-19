@@ -1,7 +1,8 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import AuthPage from './AuthPage'
 import Workspace from './Workspace'
 import { useAuth } from './context/useAuth'
+import { useTheme } from './hooks/useTheme'
 import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
 
@@ -56,13 +57,19 @@ function WorkspaceRoute() {
 import TargetCursor from './components/ui/TargetCursor'
 
 function App() {
+  useTheme()
+  const location = useLocation()
+  const showTargetCursor = !location.pathname.startsWith('/workspace/')
+
   return (
     <>
-      <TargetCursor 
-        spinDuration={4.2}
-        hideDefaultCursor={false}
-        parallaxOn={true}
-      />
+      {showTargetCursor && (
+        <TargetCursor 
+          spinDuration={4.2}
+          hideDefaultCursor={false}
+          parallaxOn={true}
+        />
+      )}
       <Routes>
         <Route path="/" element={<RootRoute />} />
       <Route

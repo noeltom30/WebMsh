@@ -8,6 +8,7 @@ import InputField from '../components/ui/InputField'
 import PasswordField from '../components/ui/PasswordField'
 import { api } from '../api'
 import { AUTH_ERROR_MESSAGES, getPasswordStrengthScore, strengthLabel } from '../utils/auth'
+import ShapeGrid from '../components/ui/ShapeGrid'
 import './AuthModern.css'
 
 function safeReturnTarget(raw) {
@@ -154,7 +155,26 @@ export default function SignUpPage() {
 
   return (
     <div className="auth-modern-page">
-      <div className="auth-modern-shell">
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}>
+        <ShapeGrid
+          speed={0.03}
+          squareSize={40}
+          direction="diagonal"
+          borderColor="#1b2b44"
+          hoverFillColor="#4b559e"
+          shape="triangle"
+          hoverTrailAmount={8}
+          hoverColor="#4b559e"
+        />
+      </div>
+
+      <div className="auth-modern-shell relative z-10">
         <AuthBrandPanel />
 
         <section className="auth-modern-stage">

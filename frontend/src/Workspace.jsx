@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { api } from './api'
+import { useTheme } from './hooks/useTheme'
 import Button from './components/ui/Button'
 import WebMshLogo from './components/layout/WebMshLogo'
 import {
@@ -494,28 +495,17 @@ function ExportStagePanel({ selectedGeom, projectId, pushToast, health, info }) 
 
 // ── Main Workspace component ──────────────────────────────────────────────────
 function Workspace({ projectId, user, onLogout }) {
-  const navigate    = useNavigate()
-  const mountRef       = useRef(null)
-  const geomGroupRef   = useRef(null)
-  const geomObjectsRef = useRef(new Map())  // geomId → THREE.Group
-  const toastIdRef     = useRef(0)
-  const sidebarBodyRef = useRef(null)       // scrollable sidebar body
+  const navigate = useNavigate()
+  const mountRef = useRef(null)
+  const geomGroupRef = useRef(null)
 
-  // UI state
-  const [collapsed,      setCollapsed]      = useState(false)
-  const [activeStage,    setActiveStage]    = useState('geometry')
-  const [loading,        setLoading]        = useState(true)
-  const [dragOver,       setDragOver]       = useState(false)
-  const [showHint,       setShowHint]       = useState(() => !localStorage.getItem('webmsh_viewport_hint_v1'))
-  const [tourActive,     setTourActive]     = useState(false)
-  const [showTourPrompt, setShowTourPrompt] = useState(false)
-
-  // Data state
-  const [health,         setHealth]         = useState(null)
-  const [info,           setInfo]           = useState(null)
-  const [project,        setProject]        = useState(null)
-  const [geoms,          setGeoms]          = useState([])
-  const [toasts,         setToasts]         = useState([])
+  const [collapsed, setCollapsed] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [health, setHealth] = useState(null)
+  const [info, setInfo] = useState(null)
+  const [project, setProject] = useState(null)
+  const [geoms, setGeoms] = useState([])
+  const [lastAction, setLastAction] = useState('')
   const [selectedGeomId, setSelectedGeomId] = useState(null)
 
   // Form state (unchanged from original)
@@ -569,7 +559,7 @@ function Workspace({ projectId, user, onLogout }) {
   useEffect(() => {
     const mount = mountRef.current
     if (!mount) return
-    const scene    = new THREE.Scene()
+    const scene = new THREE.Scene()
     scene.background = new THREE.Color('#0a0c10')
     const { clientWidth: w, clientHeight: h } = mount
     const camera   = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000)
@@ -585,7 +575,11 @@ function Workspace({ projectId, user, onLogout }) {
     const dir = new THREE.DirectionalLight(0xffffff, 0.8)
     dir.position.set(5, 8, 4)
     scene.add(dir)
-    scene.add(new THREE.GridHelper(10, 20, 0x2c3140, 0x1c202b))
+    
+    // Grid changes based on initial theme, but dynamic updating is handled in next effect
+    const grid = new THREE.GridHelper(10, 20, theme === 'light' ? 0x73bde9 : 0x2c3140, theme === 'light' ? 0xb4d8f1 : 0x1c202b)
+    grid.name = 'gridHelper'
+    scene.add(grid)
     scene.add(new THREE.AxesHelper(1.25))
     const geomGroup = new THREE.Group()
     scene.add(geomGroup)
@@ -614,7 +608,25 @@ function Workspace({ projectId, user, onLogout }) {
         }
       })
     }
-  }, [])
+  }, []) // Empty dependency array, setup once
+
+  // Update theme dynamically in Three.js
+  useEffect(() => {
+    if (!sceneRef.current) return
+    const isLight = theme === 'light'
+    sceneRef.current.background = new THREE.Color(isLight ? '#e7f0f8' : '#0a0c10')
+    
+    // Recreate grid
+    const oldGrid = sceneRef.current.getObjectByName('gridHelper')
+    if (oldGrid) {
+      sceneRef.current.remove(oldGrid)
+      oldGrid.geometry.dispose()
+      oldGrid.material.dispose()
+    }
+    const grid = new THREE.GridHelper(10, 20, isLight ? 0x73bde9 : 0x2c3140, isLight ? 0xb4d8f1 : 0x1c202b)
+    grid.name = 'gridHelper'
+    sceneRef.current.add(grid)
+  }, [theme])
 
   // ── Render geometries — per-geom sub-groups for selection targeting ────────
   useEffect(() => {
@@ -792,130 +804,120 @@ function Workspace({ projectId, user, onLogout }) {
     } catch (e) { pushToast(e?.body?.detail || 'Failed to delete geometry.', 'error') }
   }
 
-  // ── Drag-and-drop CAD onto viewport ──────────────────────────────────────
-  const handleDragOver  = (e) => { e.preventDefault(); setDragOver(true) }
-  const handleDragLeave = (e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false) }
-  const handleDrop      = async (e) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (!file) return
-    const ext     = file.name.split('.').pop().toLowerCase()
-    const allowed = ['step', 'stp', 'iges', 'igs', 'brep', 'stl', 'vtk', 'msh']
-    if (!allowed.includes(ext)) { pushToast(`Unsupported format: .${ext}`, 'error'); return }
-    await handleCadUpload(file)
-  }
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] text-slate-300 selection:bg-indigo-500/30 font-sans">
+      {/* Sidebar */}
+      <aside className={`flex flex-col border-r border-slate-800 bg-[#0B0D13] transition-[width] duration-200 ease-in-out shrink-0 relative ${collapsed ? 'w-[56px]' : 'w-[320px]'}`}>
+        {/* Brand */}
+        <div className="flex h-14 items-center justify-between border-b border-slate-800 px-3 gap-2">
+          <div className={`flex items-center gap-2 min-w-0 transition-opacity duration-150 ${collapsed ? 'opacity-0 pointer-events-none w-0 overflow-hidden' : 'opacity-100'}`}>
+            <WebMshLogo size={28} color="#5aaddb" />
+            <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#fff 10%,#7ed4f7 60%,#4ab8ef 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'nowrap' }}>WebMsh</span>
+          </div>
+          {collapsed && <div className="flex items-center justify-center w-full"><WebMshLogo size={24} color="#5aaddb" /></div>}
+          <button onClick={() => setCollapsed(!collapsed)}
+            className="flex h-6 w-6 items-center justify-center rounded bg-transparent border-none shadow-none text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors shrink-0 focus:outline-none">
+            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </button>
+        </div>
 
-  const dismissHint = () => {
-    setShowHint(false)
-    localStorage.setItem('webmsh_viewport_hint_v1', '1')
-  }
+        {/* Project name */}
+        <div className={`flex h-9 items-center border-b border-slate-800/60 px-4 ${collapsed ? 'hidden' : 'block'}`}>
+          <span className="font-medium text-[11px] tracking-wide text-slate-400 truncate">{project?.name || 'Workspace'}</span>
+        </div>
 
-  // ── Empty viewport card action — expand sidebar + scroll to section ────────
-  const handleEmptyViewportAction = (sectionId) => {
-    // Always switch to geometry stage and expand sidebar first
-    setActiveStage('geometry')
-    setCollapsed(false)
-    // After sidebar expand animation (200ms), scroll the section into view
-    setTimeout(() => {
-      const el = document.getElementById(sectionId)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        // Brief highlight flash on the target section
-        el.style.transition = 'box-shadow 0.15s ease'
-        el.style.boxShadow  = '0 0 0 2px rgba(99,102,241,0.4)'
-        setTimeout(() => { el.style.boxShadow = '' }, 900)
-      } else if (sidebarBodyRef.current) {
-        sidebarBodyRef.current.scrollTop = 0
-      }
-    }, 230)
-  }
+        {/* Scrollable body */}
+        <div className={`flex-1 overflow-y-auto overflow-x-hidden p-3.5 space-y-5 ${collapsed ? 'hidden' : 'block'}`}>
 
-  // ── Stage panel content ───────────────────────────────────────────────────
-  const renderStageContent = () => {
-    switch (activeStage) {
-
-      case 'geometry':
-        return (
-          <div className="space-y-5">
-            {/* Primitives */}
-            <section id="ws-primitives" className="space-y-2.5 scroll-mt-2">
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Primitives</h3>
-              <div className="space-y-3">
-
-                {/* Box */}
-                <div className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-2.5">
-                  <h4 className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
-                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#4b8fea' }} />
-                    Box
-                  </h4>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <SideInput label="Size X" value={boxParams.width}    onChange={e => setBoxParams({ ...boxParams, width:    e.target.value })} />
-                    <SideInput label="Size Y" value={boxParams.height}   onChange={e => setBoxParams({ ...boxParams, height:   e.target.value })} />
-                    <SideInput label="Size Z" value={boxParams.depth}    onChange={e => setBoxParams({ ...boxParams, depth:    e.target.value })} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <SideInput label="Pos X"  value={boxParams.origin_x} onChange={e => setBoxParams({ ...boxParams, origin_x: e.target.value })} />
-                    <SideInput label="Pos Y"  value={boxParams.origin_y} onChange={e => setBoxParams({ ...boxParams, origin_y: e.target.value })} />
-                    <SideInput label="Pos Z"  value={boxParams.origin_z} onChange={e => setBoxParams({ ...boxParams, origin_z: e.target.value })} />
-                  </div>
-                  <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleBox}>Create Box</Button>
-                </div>
-
-                {/* Sphere */}
-                <div className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-2.5">
-                  <h4 className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
-                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#f5c542' }} />
-                    Sphere
-                  </h4>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    <SideInput label="Radius" value={sphereParams.radius}   onChange={e => setSphereParams({ ...sphereParams, radius:   e.target.value })} />
-                    <SideInput label="Pos X"  value={sphereParams.center_x} onChange={e => setSphereParams({ ...sphereParams, center_x: e.target.value })} />
-                    <SideInput label="Pos Y"  value={sphereParams.center_y} onChange={e => setSphereParams({ ...sphereParams, center_y: e.target.value })} />
-                    <SideInput label="Pos Z"  value={sphereParams.center_z} onChange={e => setSphereParams({ ...sphereParams, center_z: e.target.value })} />
-                  </div>
-                  <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleSphere}>Create Sphere</Button>
-                </div>
-
-                {/* Cylinder */}
-                <div className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-2.5">
-                  <h4 className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
-                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#5ad35a' }} />
-                    Cylinder
-                  </h4>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <SideInput label="Radius" value={cylParams.radius} onChange={e => setCylParams({ ...cylParams, radius: e.target.value })} />
-                    <SideInput label="Height" value={cylParams.height} onChange={e => setCylParams({ ...cylParams, height: e.target.value })} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <SideInput label="Pos X" value={cylParams.base_x} onChange={e => setCylParams({ ...cylParams, base_x: e.target.value })} />
-                    <SideInput label="Pos Y" value={cylParams.base_y} onChange={e => setCylParams({ ...cylParams, base_y: e.target.value })} />
-                    <SideInput label="Pos Z" value={cylParams.base_z} onChange={e => setCylParams({ ...cylParams, base_z: e.target.value })} />
-                  </div>
-                  <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleCylinder}>Create Cylinder</Button>
-                </div>
-
-                {/* Import CAD */}
-                <div id="ws-import" className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-2.5 scroll-mt-2">
-                  <h4 className="flex items-center gap-1.5 text-xs font-medium text-slate-300">
-                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: '#7ad4ff' }} />
-                    Import CAD / Mesh
-                  </h4>
-                  <div className="relative flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-900/30 px-4 py-4 text-center transition hover:bg-slate-900/50 hover:border-indigo-500/40">
-                    <input type="file" accept=".step,.stp,.iges,.igs,.brep,.stl,.vtk,.msh"
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      onChange={e => setCadFile(e.target.files?.[0] || null)} />
-                    <div className="pointer-events-none">
-                      <p className="text-xs text-indigo-400 font-medium truncate max-w-[180px]">{cadFile ? cadFile.name : 'Choose or drop a file'}</p>
-                      <p className="text-[10px] text-slate-600 mt-1">STEP · IGES · BREP · STL · VTK · MSH</p>
-                    </div>
-                  </div>
-                  <Button variant="secondary" size="sm" className="w-full mt-1" onClick={() => handleCadUpload()} disabled={!cadFile}>
-                    Upload &amp; Mesh
-                  </Button>
-                </div>
+          {/* Project info */}
+          <section className="space-y-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Project</h3>
+            <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500">Name</span>
+                <span className="font-medium text-slate-300">{project?.name || 'Loading…'}</span>
               </div>
-            </section>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500">ID</span>
+                <span className="font-medium text-slate-300">{projectId}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-500">User</span>
+                <span className="font-medium text-slate-300 text-right overflow-hidden text-ellipsis whitespace-nowrap pl-2">{user?.email || '--'}</span>
+              </div>
+              <div className="pt-2 grid grid-cols-2 gap-2">
+                <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
+                <Button variant="danger" size="sm" onClick={onLogout}>Sign Out</Button>
+              </div>
+            </div>
+          </section>
+
+          {/* Mesh Settings */}
+          <MeshSettingsPanel settings={meshSettings} onChange={setMeshSettings} />
+
+          {/* Add Primitives */}
+          <section className="space-y-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Add Geometry</h3>
+            <div className="space-y-3">
+              {/* Box */}
+              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-300">Box</h4>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <SideInput label="Size X" value={boxParams.width} onChange={e => setBoxParams({ ...boxParams, width: e.target.value })} />
+                  <SideInput label="Size Y" value={boxParams.height} onChange={e => setBoxParams({ ...boxParams, height: e.target.value })} />
+                  <SideInput label="Size Z" value={boxParams.depth} onChange={e => setBoxParams({ ...boxParams, depth: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <SideInput label="Pos X" value={boxParams.origin_x} onChange={e => setBoxParams({ ...boxParams, origin_x: e.target.value })} />
+                  <SideInput label="Pos Y" value={boxParams.origin_y} onChange={e => setBoxParams({ ...boxParams, origin_y: e.target.value })} />
+                  <SideInput label="Pos Z" value={boxParams.origin_z} onChange={e => setBoxParams({ ...boxParams, origin_z: e.target.value })} />
+                </div>
+                <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleBox}>Create Box</Button>
+              </div>
+
+              {/* Sphere */}
+              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-300">Sphere</h4>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <SideInput label="Radius" value={sphereParams.radius} onChange={e => setSphereParams({ ...sphereParams, radius: e.target.value })} />
+                  <SideInput label="Pos X" value={sphereParams.center_x} onChange={e => setSphereParams({ ...sphereParams, center_x: e.target.value })} />
+                  <SideInput label="Pos Y" value={sphereParams.center_y} onChange={e => setSphereParams({ ...sphereParams, center_y: e.target.value })} />
+                  <SideInput label="Pos Z" value={sphereParams.center_z} onChange={e => setSphereParams({ ...sphereParams, center_z: e.target.value })} />
+                </div>
+                <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleSphere}>Create Sphere</Button>
+              </div>
+
+              {/* Cylinder */}
+              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-300">Cylinder</h4>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <SideInput label="Radius" value={cylParams.radius} onChange={e => setCylParams({ ...cylParams, radius: e.target.value })} />
+                  <SideInput label="Height" value={cylParams.height} onChange={e => setCylParams({ ...cylParams, height: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <SideInput label="Pos X" value={cylParams.base_x} onChange={e => setCylParams({ ...cylParams, base_x: e.target.value })} />
+                  <SideInput label="Pos Y" value={cylParams.base_y} onChange={e => setCylParams({ ...cylParams, base_y: e.target.value })} />
+                  <SideInput label="Pos Z" value={cylParams.base_z} onChange={e => setCylParams({ ...cylParams, base_z: e.target.value })} />
+                </div>
+                <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleCylinder}>Create Cylinder</Button>
+              </div>
+
+              {/* Upload */}
+              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-300">Import CAD / Mesh</h4>
+                <div className="relative flex flex-col items-center justify-center rounded border border-dashed border-slate-700 bg-slate-900/30 px-4 py-4 text-center transition hover:bg-slate-900/50 hover:border-indigo-500/40">
+                  <input type="file" accept=".step,.stp,.iges,.igs,.brep,.stl,.vtk,.msh"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    onChange={e => setCadFile(e.target.files?.[0] || null)} />
+                  <div className="pointer-events-none">
+                    <p className="text-xs text-indigo-400 font-medium truncate max-w-[180px]">{cadFile ? cadFile.name : 'Choose a file'}</p>
+                    <p className="text-[10px] text-slate-500 mt-1">STEP, IGES, BREP, STL, VTK, MSH</p>
+                  </div>
+                </div>
+                <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleCadUpload} disabled={!cadFile}>Upload & Mesh</Button>
+              </div>
+            </div>
+          </section>
 
             {/* 2D Sketches */}
             <div id="ws-sketch" className="scroll-mt-2">
@@ -927,146 +929,53 @@ function Workspace({ projectId, user, onLogout }) {
               />
             </div>
 
-            {/* 3D Operations */}
-            <OperationsPanel
-              projectId={numericProjectId}
-              geoms={geoms}
-              meshSettings={meshSettings}
-              onCreated={msg => loadWorkspaceData(msg)}
-              onError={msg => pushToast(msg, 'error')}
-            />
-          </div>
-        )
-
-      case 'mesh':
-        return (
-          <div className="space-y-4">
-            <MeshSettingsPanel settings={meshSettings} onChange={setMeshSettings} />
-            {/* Algorithm reference */}
-            <div className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Algorithm Guide</p>
-              {[
-                { name: 'Default',                desc: 'Gmsh auto-selects based on geometry' },
-                { name: 'MeshAdapt (1)',           desc: 'Adaptive refinement; slow but accurate' },
-                { name: 'Delaunay (5)',            desc: 'Fast triangulation; good general use' },
-                { name: 'Frontal (6)',             desc: 'Advancing-front; highest mesh quality' },
-                { name: 'Frontal-Delaunay (8)',    desc: 'Hybrid; good when quads needed downstream' },
-              ].map(a => (
-                <div key={a.name} className="text-[10px] leading-relaxed">
-                  <span className="text-slate-400 font-medium">{a.name}</span>
-                  <span className="text-slate-600"> — {a.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-
-      case 'label':
-        return (
-          <LabelStagePanel
-            selectedGeom={selectedGeom}
+          {/* Operations */}
+          <OperationsPanel
             projectId={numericProjectId}
-            onRefresh={() => loadWorkspaceData()}
-            pushToast={pushToast}
+            geoms={geoms}
+            meshSettings={meshSettings}
+            onCreated={msg => loadWorkspaceData(msg)}
+            onError={msg => setLastAction(msg)}
           />
-        )
 
-      case 'export':
-        return (
-          <ExportStagePanel
-            selectedGeom={selectedGeom}
-            projectId={numericProjectId}
-            pushToast={pushToast}
-            health={health}
-            info={info}
-          />
-        )
-
-      default:
-        return null
-    }
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] text-slate-300 selection:bg-indigo-500/30 font-sans">
-
-      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className={`flex flex-col border-r border-slate-800/80 bg-[#0B0D13] transition-[width] duration-200 ease-in-out shrink-0 ${collapsed ? 'w-[52px]' : 'w-[300px]'}`}>
-
-        {/* Brand row */}
-        <div className="flex h-12 items-center justify-between border-b border-slate-800/80 px-3 gap-2 shrink-0">
-          <div className={`flex items-center gap-2 min-w-0 overflow-hidden transition-all duration-150 ${collapsed ? 'w-0 opacity-0 pointer-events-none' : 'opacity-100'}`}>
-            <WebMshLogo size={26} color="#5aaddb" />
-            <div className="flex flex-col min-w-0 leading-none">
-              <span className="text-[13px] font-bold text-slate-200 tracking-tight">WebMsh</span>
-              <span className="text-[10px] text-slate-600 truncate">{project?.name || '…'}</span>
-            </div>
-          </div>
-          {collapsed && <div className="w-full flex justify-center"><WebMshLogo size={22} color="#5aaddb" /></div>}
-          <button onClick={() => setCollapsed(c => !c)}
-            className="shrink-0 flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-slate-800 hover:text-slate-300 transition-colors focus:outline-none">
-            {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-          </button>
-        </div>
-
-        {/* Stage tabs — horizontal, only when expanded */}
-        {!collapsed && (
-          <div id="ws-tour-stage-tabs" className="flex shrink-0 border-b border-slate-800/80">
-            {STAGES.map(({ id, label, Icon }) => (
-              <button key={id}
-                id={`ws-stage-tab-${id}`}
-                onClick={() => setActiveStage(id)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[9px] font-semibold uppercase tracking-wider transition-all duration-150 border-b-2 ${
-                  activeStage === id
-                    ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
-                    : 'text-slate-600 border-transparent hover:text-slate-400 hover:bg-slate-800/30'
-                }`}>
-                <Icon />
-                <span>{label}</span>
+          {/* Status */}
+          <section className="space-y-2.5">
+            <div className="flex justify-between items-center">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Status</h3>
+              <button onClick={() => loadWorkspaceData('Workspace refreshed.')}
+                className="bg-transparent border-none shadow-none text-slate-500 hover:text-indigo-400 transition-colors p-1 rounded hover:bg-indigo-500/10 focus:outline-none" title="Refresh">
+                <RefreshIcon />
               </button>
-            ))}
-          </div>
-        )}
+            </div>
+            <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2">
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Health</span><span className="font-medium text-emerald-500/90">{health ? health.status : '--'}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Backend</span><span className="font-medium text-slate-300">{info ? `${info.name} v${info.version}` : '--'}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Gmsh</span><span className="font-medium text-slate-300">{info ? (info.gmsh_available ? 'Ready' : 'Missing') : '--'}</span></div>
+            </div>
+          </section>
 
-        {/* Scrollable stage content + geometry list */}
-        {!collapsed && (
-          <div ref={sidebarBodyRef} className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 space-y-5">
+          {/* Feedback */}
+          {lastAction && (
+            <div className="rounded border border-indigo-500/20 bg-indigo-500/10 p-2.5 text-xs text-indigo-200">{lastAction}</div>
+          )}
 
-            {/* Active stage form */}
-            {renderStageContent()}
-
-            {/* Geometry list — always visible across all stages */}
-            <section id="ws-tour-geom-list" className="space-y-2 pb-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                  Geometries{geoms.length > 0 && <span className="text-slate-700 ml-1">({geoms.length})</span>}
-                </h3>
-                <button onClick={() => loadWorkspaceData('Workspace refreshed.')} title="Refresh"
-                  className="text-slate-600 hover:text-indigo-400 transition-colors p-1 rounded hover:bg-indigo-500/10 focus:outline-none">
-                  <RefreshIcon />
-                </button>
+          {/* Geometry List */}
+          {geoms.length > 0 && (
+            <section className="space-y-2.5 pb-6">
+              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Geometry List ({geoms.length})</h3>
+              <div className="space-y-1.5">
+                {geoms.map(g => (
+                  <GeometryItem
+                    key={g.id}
+                    g={g}
+                    projectId={numericProjectId}
+                    selected={selectedGeomId === g.id}
+                    onSelect={id => setSelectedGeomId(prev => prev === id ? null : id)}
+                    onDelete={handleDeleteGeom}
+                    onRefresh={() => loadWorkspaceData()}
+                  />
+                ))}
               </div>
-
-              {geoms.length > 0 ? (
-                <div className="space-y-1">
-                  {geoms.map(g => (
-                    <GeometryItem
-                      key={g.id}
-                      g={g}
-                      projectId={numericProjectId}
-                      selected={selectedGeomId === g.id}
-                      onSelect={id => setSelectedGeomId(prev => prev === id ? null : id)}
-                      onDelete={handleDeleteGeom}
-                      onRefresh={() => loadWorkspaceData()}
-                    />
-                  ))}
-                </div>
-              ) : !loading && (
-                <p className="text-[11px] text-slate-700 py-2">
-                  No geometries yet. Create one above.
-                </p>
-              )}
             </section>
 
             {/* Navigation footer */}
@@ -1093,136 +1002,28 @@ function Workspace({ projectId, user, onLogout }) {
         )}
       </aside>
 
-      {/* ── Viewport ────────────────────────────────────────────────────── */}
-      <main className="relative flex-1"
-        ref={mountRef}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}>
-
-        {/* Loading overlay */}
+      {/* Viewport */}
+      <main className="relative flex-1" ref={mountRef}>
         {loading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#090A0F]/80 backdrop-blur-sm">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/35 backdrop-blur-md/60 dark:bg-[#090A0F]/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-7 w-7 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500" />
-              <p className="text-[11px] font-medium tracking-widest text-indigo-300 uppercase">Meshing…</p>
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500" />
+              <p className="text-xs font-medium tracking-wider text-indigo-300 uppercase">Loading Workspace</p>
             </div>
           </div>
         )}
-
-        {/* Drag-over overlay */}
-        {dragOver && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center border-2 border-dashed border-indigo-500/50 bg-indigo-500/5 pointer-events-none">
-            <div className="rounded-xl border border-indigo-500/40 bg-[#0B0D13]/90 px-8 py-5 text-center backdrop-blur-md">
-              <p className="text-sm font-semibold text-indigo-300">Drop to import</p>
-              <p className="text-xs text-slate-500 mt-1">STEP · IGES · BREP · STL · VTK · MSH</p>
+        <div className="absolute bottom-5 left-5 z-10 pointer-events-none">
+          <div className="rounded border border-slate-800/60 bg-[#0B0D13]/80 p-3 shadow-xl backdrop-blur-md">
+            <div className="flex flex-col gap-1 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+              <p>Orbit <span className="text-slate-600 lowercase mx-1">drag</span></p>
+              <p>Pan <span className="text-slate-600 lowercase mx-1">right-drag</span></p>
+              <p>Zoom <span className="text-slate-600 lowercase mx-1">scroll</span></p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-slate-800/60 text-[11px] text-indigo-400 font-medium">
+              {!loading && (project?.name || `Project #${projectId}`)}
             </div>
           </div>
-        )}
-
-        {/* Empty state — shown when no geometries */}
-        {!loading && geoms.length === 0 && !dragOver && (
-          <EmptyViewport onAction={handleEmptyViewportAction} />
-        )}
-
-        {/* Mesh stats HUD — top right */}
-        {!loading && geoms.length > 0 && (
-          <div className="absolute top-4 right-4 z-10 pointer-events-none select-none">
-            <div className="rounded-lg border border-slate-800/60 bg-[#0B0D13]/85 px-3 py-2.5 shadow-xl backdrop-blur-md">
-              {selectedGeom ? (
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-indigo-400/80 mb-1.5">
-                    {selectedGeom.type.replace(/_/g, ' ')} <span className="text-slate-600">#{selectedGeom.id}</span>
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-300">
-                    {(selectedGeom.mesh?.node_count || 0).toLocaleString()} <span className="text-slate-600">nodes</span>
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-300">
-                    {(selectedGeom.mesh?.triangle_count || 0).toLocaleString()} <span className="text-slate-600">triangles</span>
-                  </p>
-                  {selectedGeom.params?.labels?.length > 0 && (
-                    <p className="text-[10px] text-emerald-400/90 mt-1.5 font-mono">
-                      {selectedGeom.params.labels.join(' · ')}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Workspace</p>
-                  <p className="text-[11px] font-mono text-slate-300">
-                    {totalNodes.toLocaleString()} <span className="text-slate-600">nodes</span>
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-300">
-                    {totalTris.toLocaleString()} <span className="text-slate-600">triangles</span>
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-500">
-                    {geoms.length} {geoms.length === 1 ? 'geometry' : 'geometries'}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Controls hint — bottom left */}
-        <div id="ws-tour-controls-hint" className="absolute bottom-5 left-5 z-10 select-none">
-          <div className="rounded-lg border border-slate-800/60 bg-[#0B0D13]/80 px-3 py-2.5 shadow-xl backdrop-blur-md pointer-events-none">
-            <div className="flex flex-col gap-1 text-[10px] tracking-wide text-slate-600">
-              <p>Orbit <span className="text-slate-700 ml-1">drag</span></p>
-              <p>Pan   <span className="text-slate-700 ml-1">right-drag</span></p>
-              <p>Zoom  <span className="text-slate-700 ml-1">scroll</span></p>
-            </div>
-            {!loading && (
-              <div className="mt-2 pt-2 border-t border-slate-800/60 text-[10px] text-indigo-400/70 font-medium truncate max-w-[140px]">
-                {project?.name || `Project #${projectId}`}
-              </div>
-            )}
-          </div>
-          {/* Tour trigger — always accessible */}
-          {!loading && (
-            <button onClick={startTour}
-              className="mt-1.5 w-full flex items-center justify-center gap-1.5 rounded-md border border-slate-800/60 bg-[#0B0D13]/80 px-3 py-1.5 text-[10px] font-medium text-slate-600 hover:text-indigo-400 hover:border-indigo-500/30 transition-colors backdrop-blur-md pointer-events-auto focus:outline-none">
-              <span className="text-[9px] font-bold text-slate-700">?</span> Take a tour
-            </button>
-          )}
         </div>
-
-        {/* Onboarding hint pill — bottom center, first-time only */}
-        {showHint && !loading && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10">
-            <div style={{ animation: 'wsToastIn 0.35s cubic-bezier(0.32,0.72,0,1) both' }}
-              className="flex items-center gap-3 rounded-full border border-slate-700/60 bg-[#0B0D13]/90 px-5 py-2 shadow-xl backdrop-blur-md">
-              <span className="text-[11px] text-slate-400">
-                Drag to orbit · Scroll to zoom · Click a geometry to select it
-              </span>
-              <button onClick={dismissHint}
-                className="text-slate-600 hover:text-slate-300 text-base leading-none transition focus:outline-none" aria-label="Dismiss hint">
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* First-time tour prompt — auto-appears for new users */}
-        {showTourPrompt && !tourActive && !loading && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20"
-            style={{ animation: 'wsToastIn 0.35s cubic-bezier(0.32,0.72,0,1) both' }}>
-            <div className="flex items-center gap-3 rounded-full border border-indigo-500/35 bg-[#0D0F17]/92 px-5 py-2.5 shadow-2xl backdrop-blur-md">
-              <span className="text-[11px] text-slate-300 font-medium">New to WebMsh?</span>
-              <button onClick={startTour}
-                className="rounded-full bg-indigo-600 px-3 py-1 text-[10px] font-semibold text-white hover:bg-indigo-500 transition focus:outline-none">
-                Take the tour
-              </button>
-              <button onClick={() => { setShowTourPrompt(false); localStorage.setItem('webmsh_tour_seen_v1', '1') }}
-                className="text-slate-600 hover:text-slate-400 text-sm leading-none transition focus:outline-none" aria-label="Dismiss">
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Toast notifications */}
-        <ToastArea toasts={toasts} />
       </main>
 
       {/* Product tour — rendered outside <main> to cover the full viewport */}

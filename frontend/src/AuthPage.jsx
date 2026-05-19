@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api'
 import { useAuth } from './context/useAuth'
 import WebMshLogo from './components/layout/WebMshLogo'
+import ShapeGrid from './components/ui/ShapeGrid'
 import { AUTH_ERROR_MESSAGES } from './utils/auth'
 
 function passwordScore(password) {
@@ -263,11 +264,40 @@ function AuthPage() {
 
   return (
     <div className="auth-shell">
-      <div className="auth-card">
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      >
+        <ShapeGrid
+          speed={0.03}
+          squareSize={40}
+          direction="diagonal"
+          borderColor="#1b2b44"
+          hoverFillColor="#4b559e"
+          shape="triangle"
+          hoverTrailAmount={8}
+          hoverColor="#4b559e"
+        />
+      </div>
+
+      <div className="auth-card relative z-10">
         <section className="auth-brand">
-          <Link to="/" className="auth-brand-badge" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px 6px 10px', textDecoration: 'none', cursor: 'pointer' }}>
-            <WebMshLogo size={28} color="#7ed4f7" />
-            <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#fff 10%,#7ed4f7 60%,#4ab8ef 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>WebMsh</span>
+          <Link
+            to="/"
+            className="auth-brand-badge"
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px 6px 10px', textDecoration: 'none', cursor: 'pointer' }}
+          >
+            <WebMshLogo size={28} className="text-[#070b14] dark:text-[#7ed4f7]" />
+            <span className="text-[18px] font-extrabold tracking-[-0.03em] bg-clip-text text-transparent bg-gradient-to-br from-[#070b14] via-[#1e293b] to-[#0f172a] dark:from-[#fff] dark:via-[#7ed4f7] dark:to-[#4ab8ef]">
+              WebMsh
+            </span>
           </Link>
           <h1>Secure access to your meshing workspace</h1>
           <p>Sign in with email verification or Google OAuth, then manage projects from a persistent profile dashboard.</p>
