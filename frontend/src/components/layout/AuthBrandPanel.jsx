@@ -21,7 +21,7 @@ export default function AuthBrandPanel() {
           >
             WebMsh
           </span>
-        </div>
+        </Link>
 
         <h1 className="mt-6 text-4xl font-bold leading-tight tracking-[-0.02em] text-slate-100 animate-fade-in-up">
           Secure entry to your engineering mesh platform
