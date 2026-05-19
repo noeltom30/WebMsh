@@ -1,9 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../../api'
 
-const PRESET_LABELS = ['wall', 'inlet', 'outlet', 'support', 'load', 'symmetry']
+const PRESET_LABELS  = ['wall', 'inlet', 'outlet', 'support', 'load', 'symmetry']
 const EXPORT_FORMATS = ['msh', 'stl', 'vtk', 'obj']
-const SKETCH_TYPES = ['sketch_rectangle', 'sketch_circle', 'sketch_polygon']
+const SKETCH_TYPES   = ['sketch_rectangle', 'sketch_circle', 'sketch_polygon']
+
+// Plain-English descriptions for engineering jargon shown on hover
+const MESH_TOOLTIPS = {
+  minSize:   'Smallest allowed edge length. Lower = finer mesh, preserves small features.',
+  maxSize:   'Largest allowed edge length. Higher = coarser mesh, faster to generate.',
+  order1:    'Linear (1st-order) elements — faster solver, less accurate.',
+  order2:    'Quadratic (2nd-order) elements — more accurate, larger mesh file.',
+  algDefault:'Gmsh chooses automatically based on geometry type.',
+  alg1:      'MeshAdapt — adaptive refinement; slower but produces high-quality elements.',
+  alg5:      'Delaunay — fast general-purpose triangulation.',
+  alg6:      'Frontal (Delaunay) — advancing-front method; best element quality.',
+  alg8:      'Frontal-Delaunay hybrid — good when quad elements are needed downstream.',
+}
+
+// Color per geometry type, matching the Three.js viewport colors
+const TYPE_CSS_COLORS = {
+  box:              '#4b8fea',
+  sphere:           '#f5c542',
+  cylinder:         '#5ad35a',
+  sketch_rectangle: '#2dd4bf',
+  sketch_circle:    '#2dd4bf',
+  sketch_polygon:   '#2dd4bf',
+  extrude:          '#f97316',
+  revolve:          '#f97316',
+  upload:           '#7ad4ff',
+  cad:              '#7ad4ff',
+}
 
 // ── Shared tiny input ─────────────────────────────────────────────────────────
 export function SideInput({ label, value, onChange, type = 'number', step = '0.1', min }) {
@@ -36,32 +63,77 @@ export function MeshSettingsPanel({ settings, onChange }) {
   return (
     <section className="space-y-2.5">
       <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Mesh Settings</h3>
-      <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-3">
+      <div className="rounded-lg border border-slate-800/70 bg-slate-900/20 p-3 space-y-3">
+        {/* Presets */}
         <div className="flex gap-1.5">
-          <button onClick={() => onChange({ mesh_size_min: 0.2, mesh_size_max: 0.5, mesh_order: 1, algorithm: 6 })}
-            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-300 hover:bg-indigo-600/30 hover:border-indigo-500/50 hover:text-indigo-300 transition">Coarse</button>
-          <button onClick={() => onChange({ mesh_size_min: 0.02, mesh_size_max: 0.1, mesh_order: 1, algorithm: 6 })}
-            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-300 hover:bg-indigo-600/30 hover:border-indigo-500/50 hover:text-indigo-300 transition">Fine</button>
-          <button onClick={() => onChange({ mesh_size_min: null, mesh_size_max: null, mesh_order: 1, algorithm: null })}
-            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-500 hover:text-slate-300 transition">Reset</button>
+          <button title="Coarse: max size 0.5, algorithm Frontal"
+            onClick={() => onChange({ mesh_size_min: 0.2, mesh_size_max: 0.5, mesh_order: 1, algorithm: 6 })}
+            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-300 hover:bg-indigo-600/30 hover:border-indigo-500/50 hover:text-indigo-300 transition">
+            Coarse
+          </button>
+          <button title="Fine: max size 0.1, algorithm Frontal"
+            onClick={() => onChange({ mesh_size_min: 0.02, mesh_size_max: 0.1, mesh_order: 1, algorithm: 6 })}
+            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-300 hover:bg-indigo-600/30 hover:border-indigo-500/50 hover:text-indigo-300 transition">
+            Fine
+          </button>
+          <button title="Reset to Gmsh defaults"
+            onClick={() => onChange({ mesh_size_min: null, mesh_size_max: null, mesh_order: 1, algorithm: null })}
+            className="flex-1 h-7 rounded bg-slate-800 border border-slate-700 text-[10px] font-medium text-slate-500 hover:text-slate-300 transition">
+            Reset
+          </button>
         </div>
+
+        {/* Size controls with engineering tooltips */}
         <div className="grid grid-cols-2 gap-1.5">
-          <SideInput label="Min Size" value={settings.mesh_size_min ?? ''} step="0.01"
-            onChange={e => set('mesh_size_min', e.target.value === '' ? null : Number(e.target.value))} />
-          <SideInput label="Max Size" value={settings.mesh_size_max ?? ''} step="0.01"
-            onChange={e => set('mesh_size_max', e.target.value === '' ? null : Number(e.target.value))} />
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 flex items-center gap-1">
+              Min Size
+              <span title={MESH_TOOLTIPS.minSize} className="cursor-help text-slate-700 hover:text-slate-500 transition">?</span>
+            </label>
+            <input type="number" step="0.01" value={settings.mesh_size_min ?? ''} title={MESH_TOOLTIPS.minSize}
+              onChange={e => set('mesh_size_min', e.target.value === '' ? null : Number(e.target.value))}
+              className="h-8 w-full rounded border border-slate-700/80 bg-slate-900/40 px-2 text-xs text-slate-300 shadow-sm transition placeholder:text-slate-600 focus:border-indigo-500/60 focus:bg-[#0B0D13] focus:outline-none focus:ring-1 focus:ring-indigo-500/60" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 flex items-center gap-1">
+              Max Size
+              <span title={MESH_TOOLTIPS.maxSize} className="cursor-help text-slate-700 hover:text-slate-500 transition">?</span>
+            </label>
+            <input type="number" step="0.01" value={settings.mesh_size_max ?? ''} title={MESH_TOOLTIPS.maxSize}
+              onChange={e => set('mesh_size_max', e.target.value === '' ? null : Number(e.target.value))}
+              className="h-8 w-full rounded border border-slate-700/80 bg-slate-900/40 px-2 text-xs text-slate-300 shadow-sm transition placeholder:text-slate-600 focus:border-indigo-500/60 focus:bg-[#0B0D13] focus:outline-none focus:ring-1 focus:ring-indigo-500/60" />
+          </div>
         </div>
+
+        {/* Order and algorithm with tooltips */}
         <div className="grid grid-cols-2 gap-1.5">
-          <SideSelect label="Order" value={settings.mesh_order}
-            onChange={e => set('mesh_order', Number(e.target.value))}
-            options={[{ value: 1, label: '1st order' }, { value: 2, label: '2nd order' }]} />
-          <SideSelect label="Algorithm" value={settings.algorithm ?? ''}
-            onChange={e => set('algorithm', e.target.value === '' ? null : Number(e.target.value))}
-            options={[
-              { value: '', label: 'Default' }, { value: 1, label: 'MeshAdapt' },
-              { value: 5, label: 'Delaunay' }, { value: 6, label: 'Frontal' },
-              { value: 8, label: 'Frontal-Delaunay' },
-            ]} />
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 flex items-center gap-1">
+              Order
+              <span title={`${MESH_TOOLTIPS.order1} | ${MESH_TOOLTIPS.order2}`} className="cursor-help text-slate-700 hover:text-slate-500 transition">?</span>
+            </label>
+            <select value={settings.mesh_order}
+              onChange={e => set('mesh_order', Number(e.target.value))}
+              className="h-8 w-full rounded border border-slate-700/80 bg-slate-900/60 px-2 text-xs text-slate-300 focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-indigo-500/60">
+              <option value={1} title={MESH_TOOLTIPS.order1}>1st order</option>
+              <option value={2} title={MESH_TOOLTIPS.order2}>2nd order</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 flex items-center gap-1">
+              Algorithm
+              <span title="Triangulation algorithm. Frontal (6) gives best quality." className="cursor-help text-slate-700 hover:text-slate-500 transition">?</span>
+            </label>
+            <select value={settings.algorithm ?? ''}
+              onChange={e => set('algorithm', e.target.value === '' ? null : Number(e.target.value))}
+              className="h-8 w-full rounded border border-slate-700/80 bg-slate-900/60 px-2 text-xs text-slate-300 focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-indigo-500/60">
+              <option value=""  title={MESH_TOOLTIPS.algDefault}>Default</option>
+              <option value={1} title={MESH_TOOLTIPS.alg1}>MeshAdapt</option>
+              <option value={5} title={MESH_TOOLTIPS.alg5}>Delaunay</option>
+              <option value={6} title={MESH_TOOLTIPS.alg6}>Frontal</option>
+              <option value={8} title={MESH_TOOLTIPS.alg8}>Frontal-Delaunay</option>
+            </select>
+          </div>
         </div>
       </div>
     </section>
@@ -260,14 +332,19 @@ export function OperationsPanel({ projectId, geoms, meshSettings, onCreated, onE
 
 // ── Geometry List Item ───────────────────────────────────────────────────────
 export function GeometryItem({ g, projectId, selected, onSelect, onDelete, onRefresh }) {
-  const [showLabels, setShowLabels] = useState(false)
+  const [showLabels,   setShowLabels]   = useState(false)
   const [activeLabels, setActiveLabels] = useState(g.params?.labels || [])
-  const [exportBusy, setExportBusy] = useState(false)
-  const [labelBusy, setLabelBusy] = useState(false)
-  const [showExport, setShowExport] = useState(false)
+  const [exportBusy,   setExportBusy]   = useState(false)
+  const [labelBusy,    setLabelBusy]    = useState(false)
+  const [showExport,   setShowExport]   = useState(false)
 
-  const isSketch = SKETCH_TYPES.includes(g.type)
-  const typeColor = isSketch ? 'text-teal-400' : 'text-indigo-400'
+  // Keep local label state in sync if parent refreshes the geometry data
+  useEffect(() => {
+    setActiveLabels(g.params?.labels || [])
+  }, [JSON.stringify(g.params?.labels)]) // eslint-disable-line
+
+  // Color dot matches the Three.js viewport color for this type
+  const typeCssColor = TYPE_CSS_COLORS[g.type] || '#6366f1'
 
   const toggleLabel = async (label) => {
     const next = activeLabels.includes(label)
@@ -286,20 +363,26 @@ export function GeometryItem({ g, projectId, selected, onSelect, onDelete, onRef
     setExportBusy(true)
     setShowExport(false)
     try { await api.exportGeometry(projectId, g.id, fmt) }
-    catch (e) { alert(e?.body?.detail || `Export failed`) }
+    catch (e) { console.error('Export failed:', e?.body?.detail || e) }
     finally { setExportBusy(false) }
   }
 
-  const nodes = g.mesh?.node_count ?? 0
-  const tris = g.mesh?.triangle_count ?? 0
+  const nodes = g.mesh?.node_count    ?? 0
+  const tris  = g.mesh?.triangle_count ?? 0
 
   return (
     <div onClick={() => onSelect(g.id)}
-      className={`group rounded border p-2.5 transition cursor-pointer ${selected ? 'border-indigo-500/50 bg-indigo-500/8' : 'border-slate-800/80 bg-slate-900/20 hover:border-indigo-500/30 hover:bg-indigo-500/5'}`}>
+      className={`group rounded-lg border p-2.5 transition-all duration-150 cursor-pointer ${
+        selected
+          ? 'border-indigo-500/50 bg-indigo-500/8 shadow-[0_0_0_1px_rgba(99,102,241,0.15)]'
+          : 'border-slate-800/70 bg-slate-900/20 hover:border-indigo-500/25 hover:bg-indigo-500/5'
+      }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col overflow-hidden flex-1 min-w-0">
-          <span className={`text-xs font-semibold capitalize ${typeColor}`}>
-            {g.type.replace('_', ' ')} <span className="text-slate-500 font-normal">#{g.id}</span>
+          {/* Type label with color dot matching viewport */}
+          <span className="text-xs font-semibold capitalize flex items-center gap-1.5" style={{ color: typeCssColor }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: typeCssColor }} />
+            {g.type.replace(/_/g, ' ')} <span className="text-slate-500 font-normal">#{g.id}</span>
           </span>
           {nodes > 0 && (
             <span className="text-[10px] text-slate-500 mt-0.5">{nodes.toLocaleString()} nodes · {tris.toLocaleString()} tris</span>
