@@ -192,6 +192,39 @@ def delete_geometry(
     return geometry
 
 
+def get_geometry_record(
+    conn: sqlite3.Connection,
+    user_id: int,
+    project_id: int,
+    geometry_id: int,
+) -> GeometryRecord:
+    """Public wrapper around _get_geometry_record for use by routes."""
+    return _get_geometry_record(conn, user_id, project_id, geometry_id)
+
+
+def update_geometry_labels(
+    conn: sqlite3.Connection,
+    user_id: int,
+    project_id: int,
+    geometry_id: int,
+    labels: list[str],
+) -> GeometryRecord:
+    """Persist a new set of labels in the geometry params JSON."""
+    record = _get_geometry_record(conn, user_id, project_id, geometry_id)
+    params = dict(record.params)
+    params["labels"] = labels
+    timestamp = now_ts()
+    conn.execute(
+        "UPDATE project_geometries SET params = ?, updated_at = ? WHERE id = ?",
+        (json.dumps(params), timestamp, geometry_id),
+    )
+    conn.execute(
+        "UPDATE projects SET updated_at = ? WHERE id = ?",
+        (timestamp, project_id),
+    )
+    return _get_geometry_record(conn, user_id, project_id, geometry_id)
+
+
 def count_user_projects(conn: sqlite3.Connection, user_id: int) -> int:
     row = conn.execute("SELECT COUNT(*) AS count FROM projects WHERE user_id = ?", (user_id,)).fetchone()
     return int(row["count"]) if row else 0

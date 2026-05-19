@@ -34,6 +34,10 @@ function buildProjectPath(projectId, suffix = '') {
   return `/projects/${projectId}${suffix}`
 }
 
+function buildGeomPath(projectId, geometryId, suffix = '') {
+  return `/projects/${projectId}/geometry/${geometryId}${suffix}`
+}
+
 export const api = {
   signup: (body) => request('/auth/signup', { method: 'POST', body: JSON.stringify(body) }),
   verifySignupOTP: (body) => request('/auth/signup/verify', { method: 'POST', body: JSON.stringify(body) }),
@@ -64,7 +68,9 @@ export const api = {
   getProject: (projectId) => request(buildProjectPath(projectId)),
   deleteProject: (projectId) => request(buildProjectPath(projectId), { method: 'DELETE' }),
   listProjectGeometry: (projectId) => request(buildProjectPath(projectId, '/geometry')),
-  deleteGeometry: (projectId, geometryId) => request(buildProjectPath(projectId, `/geometry/${geometryId}`), { method: 'DELETE' }),
+  deleteGeometry: (projectId, geometryId) => request(buildGeomPath(projectId, geometryId), { method: 'DELETE' }),
+
+  // Primitives
   createBox: (projectId, body) => request(buildProjectPath(projectId, '/geometry/box'), { method: 'POST', body: JSON.stringify(body) }),
   createSphere: (projectId, body) => request(buildProjectPath(projectId, '/geometry/sphere'), { method: 'POST', body: JSON.stringify(body) }),
   createCylinder: (projectId, body) => request(buildProjectPath(projectId, '/geometry/cylinder'), { method: 'POST', body: JSON.stringify(body) }),
@@ -72,5 +78,43 @@ export const api = {
     const form = new FormData()
     form.append('file', file)
     return request(buildProjectPath(projectId, '/geometry/upload'), { method: 'POST', body: form })
+  },
+
+  // 2D Sketches
+  createSketchRect: (projectId, body) => request(buildProjectPath(projectId, '/geometry/sketch/rectangle'), { method: 'POST', body: JSON.stringify(body) }),
+  createSketchCircle: (projectId, body) => request(buildProjectPath(projectId, '/geometry/sketch/circle'), { method: 'POST', body: JSON.stringify(body) }),
+  createSketchPolygon: (projectId, body) => request(buildProjectPath(projectId, '/geometry/sketch/polygon'), { method: 'POST', body: JSON.stringify(body) }),
+
+  // 3D Operations
+  extrudeGeometry: (projectId, geometryId, body) => request(buildGeomPath(projectId, geometryId, '/extrude'), { method: 'POST', body: JSON.stringify(body) }),
+  revolveGeometry: (projectId, geometryId, body) => request(buildGeomPath(projectId, geometryId, '/revolve'), { method: 'POST', body: JSON.stringify(body) }),
+
+  // Labels
+  updateGeometryLabels: (projectId, geometryId, body) => request(buildGeomPath(projectId, geometryId, '/labels'), { method: 'PATCH', body: JSON.stringify(body) }),
+
+  // Export — triggers a file download via a blob URL
+  exportGeometry: async (projectId, geometryId, format) => {
+    const response = await fetch(`${API_BASE}${buildGeomPath(projectId, geometryId, `/export?format=${format}`)}`, {
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      let body
+      try { body = JSON.parse(text) } catch { body = text }
+      const error = new Error(`Export failed: ${response.status}`)
+      error.status = response.status
+      error.body = body
+      throw error
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    const filename = match ? match[1] : `geometry_${geometryId}.${format}`
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = filename
+    anchor.click()
+    setTimeout(() => URL.revokeObjectURL(url), 5000)
   },
 }
