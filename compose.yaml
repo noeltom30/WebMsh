@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: webmsh
+      POSTGRES_USER: webmsh
+      POSTGRES_PASSWORD: webmsh
+    ports:
+      - "5432:5432"
+    volumes:
+      - webmsh-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webmsh -d webmsh"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      WEBMSH_DATABASE_URL: postgresql://webmsh:webmsh@postgres:5432/webmsh
+      WEBMSH_AUTH_SECRET: local-dev-change-me
+      WEBMSH_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      WEBMSH_FRONTEND_URL: http://localhost:5173
+      WEBMSH_DEBUG_OTP: "0"
+      WEBMSH_OTP_ENABLED: "0"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  webmsh-postgres-data:

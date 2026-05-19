@@ -1,3 +1,5 @@
+import os
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -17,10 +19,18 @@ except ImportError:
 
 
 app = FastAPI(title="WebMsh API", version="0.2.0")
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "WEBMSH_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

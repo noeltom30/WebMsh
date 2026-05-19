@@ -1,0 +1,45 @@
+properties:
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      allowInsecure: false
+      targetPort: 8000
+      transport: auto
+    registries:
+    - server: ghcr.io
+      username: ""
+      passwordSecretRef: ghcr-token
+    secrets:
+    - name: auth-secret
+      value: ""
+    - name: ghcr-token
+      value: ""
+  template:
+    containers:
+    - name: webmsh-api
+      image: "ghcr.io/noeltom30/webmsh-backend:latest"
+      env:
+      - name: WEBMSH_DB_PATH
+        value: "/data/webmsh_auth.sqlite3"
+      - name: WEBMSH_AUTH_SECRET
+        secretRef: auth-secret
+      - name: WEBMSH_SESSION_COOKIE_SECURE
+        value: "1"
+      - name: WEBMSH_SESSION_COOKIE_SAMESITE
+        value: "none"
+      - name: WEBMSH_OTP_ENABLED
+        value: "0"
+      resources:
+        cpu: 0.25
+        memory: 0.5Gi
+      volumeMounts:
+      - volumeName: webmshvol
+        mountPath: /data
+    scale:
+      minReplicas: 0
+      maxReplicas: 1
+    volumes:
+    - name: webmshvol
+      storageType: AzureFile
+      storageName: webmshfiles

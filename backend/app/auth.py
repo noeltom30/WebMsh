@@ -19,9 +19,9 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 try:
-    from .db import connect_db, isoformat_ts, now_ts
+    from .db import DatabaseConnection, connect_db, is_postgres, isoformat_ts, now_ts, table_columns
 except ImportError:
-    from db import connect_db, isoformat_ts, now_ts
+    from db import DatabaseConnection, connect_db, is_postgres, isoformat_ts, now_ts, table_columns
 
 
 def _load_env_files() -> None:
@@ -47,6 +47,7 @@ _load_env_files()
 SESSION_COOKIE_NAME = "webmsh_session"
 SESSION_TTL_SECONDS = int(os.getenv("WEBMSH_SESSION_TTL_SECONDS", "43200"))
 SESSION_COOKIE_SECURE = os.getenv("WEBMSH_SESSION_COOKIE_SECURE", "0") == "1"
+SESSION_COOKIE_SAMESITE = os.getenv("WEBMSH_SESSION_COOKIE_SAMESITE", "lax").strip().lower()
 
 OTP_TTL_SECONDS = int(os.getenv("WEBMSH_OTP_TTL_SECONDS", "300"))
 OTP_MAX_ATTEMPTS = int(os.getenv("WEBMSH_OTP_MAX_ATTEMPTS", "5"))
@@ -167,14 +168,91 @@ def _now_ts() -> int:
     return now_ts()
 
 
-def _connect() -> sqlite3.Connection:
+def _connect() -> DatabaseConnection:
     return connect_db()
 
 
 def init_auth_db() -> None:
     with _connect() as conn:
-        conn.executescript(
-            """
+        if is_postgres(conn):
+            conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    email TEXT NOT NULL UNIQUE,
+                    display_name TEXT,
+                    password_hash TEXT,
+                    is_email_verified INTEGER NOT NULL DEFAULT 0,
+                    google_sub TEXT UNIQUE,
+                    totp_enabled INTEGER NOT NULL DEFAULT 0,
+                    totp_secret TEXT,
+                    pending_totp_secret TEXT,
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    last_login_at INTEGER
+                );
+
+                CREATE TABLE IF NOT EXISTS otp_challenges (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    purpose TEXT NOT NULL,
+                    code_hash TEXT NOT NULL,
+                    context_json TEXT,
+                    expires_at INTEGER NOT NULL,
+                    attempts_left INTEGER NOT NULL,
+                    consumed INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_otp_user_purpose ON otp_challenges(user_id, purpose, consumed, expires_at);
+
+                CREATE TABLE IF NOT EXISTS mfa_challenges (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    expires_at INTEGER NOT NULL,
+                    used INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_mfa_user ON mfa_challenges(user_id, used, expires_at);
+
+                CREATE TABLE IF NOT EXISTS sessions (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    created_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    revoked INTEGER NOT NULL DEFAULT 0,
+                    last_seen_at INTEGER NOT NULL,
+                    user_agent TEXT,
+                    ip_address TEXT,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_sessions_active ON sessions(token_hash, revoked, expires_at);
+
+                CREATE TABLE IF NOT EXISTS login_throttle (
+                    identity_key TEXT PRIMARY KEY,
+                    fail_count INTEGER NOT NULL,
+                    first_failed_at INTEGER NOT NULL,
+                    locked_until INTEGER NOT NULL DEFAULT 0
+                );
+
+                CREATE TABLE IF NOT EXISTS oauth_states (
+                    id SERIAL PRIMARY KEY,
+                    state_hash TEXT NOT NULL UNIQUE,
+                    code_verifier TEXT NOT NULL,
+                    return_to TEXT,
+                    expires_at INTEGER NOT NULL,
+                    consumed INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_oauth_states ON oauth_states(state_hash, consumed, expires_at);
+                """
+            )
+        else:
+            conn.executescript(
+                """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT NOT NULL UNIQUE,
@@ -247,11 +325,8 @@ def init_auth_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_oauth_states ON oauth_states(state_hash, consumed, expires_at);
             """
-        )
-        otp_columns = {
-            str(row["name"])
-            for row in conn.execute("PRAGMA table_info(otp_challenges)").fetchall()
-        }
+            )
+        otp_columns = table_columns(conn, "otp_challenges")
         if "context_json" not in otp_columns:
             conn.execute("ALTER TABLE otp_challenges ADD COLUMN context_json TEXT")
 
@@ -621,7 +696,7 @@ def _set_session_cookie(response: Response, raw_token: str) -> None:
         raw_token,
         httponly=True,
         secure=SESSION_COOKIE_SECURE,
-        samesite="lax",
+        samesite=SESSION_COOKIE_SAMESITE,
         max_age=SESSION_TTL_SECONDS,
         path="/",
     )
@@ -1464,7 +1539,7 @@ def google_callback(
                 UPDATE users
                 SET google_sub = ?,
                     display_name = COALESCE(display_name, ?),
-                    is_email_verified = CASE WHEN ? THEN 1 ELSE is_email_verified END,
+                    is_email_verified = CASE WHEN ? = 1 THEN 1 ELSE is_email_verified END,
                     updated_at = ?
                 WHERE id = ?
                 """,
@@ -1476,7 +1551,7 @@ def google_callback(
                 """
                 UPDATE users
                 SET email = ?, display_name = COALESCE(display_name, ?),
-                    is_email_verified = CASE WHEN ? THEN 1 ELSE is_email_verified END,
+                    is_email_verified = CASE WHEN ? = 1 THEN 1 ELSE is_email_verified END,
                     updated_at = ?
                 WHERE id = ?
                 """,

@@ -5,16 +5,44 @@ from typing import Any
 from fastapi import HTTPException
 
 try:
-    from .db import isoformat_ts, now_ts
+    from .db import is_postgres, isoformat_ts, now_ts, table_columns
     from .project_models import GeometryRecord, Mesh, ProjectDetail, ProjectSummary
 except ImportError:
-    from db import isoformat_ts, now_ts
+    from db import is_postgres, isoformat_ts, now_ts, table_columns
     from project_models import GeometryRecord, Mesh, ProjectDetail, ProjectSummary
 
 
 def init_project_db(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
+    if is_postgres(conn):
+        conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                last_opened_at INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, updated_at DESC);
+
+            CREATE TABLE IF NOT EXISTS project_geometries (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                params TEXT NOT NULL,
+                mesh TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_project_geometries_project ON project_geometries(project_id, id);
+            """
+        )
+    else:
+        conn.executescript(
+            """
         CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -38,12 +66,9 @@ def init_project_db(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_project_geometries_project ON project_geometries(project_id, id);
         """
-    )
+        )
 
-    project_columns = {
-        str(row["name"])
-        for row in conn.execute("PRAGMA table_info(projects)").fetchall()
-    }
+    project_columns = table_columns(conn, "projects")
     if "last_opened_at" not in project_columns:
         conn.execute("ALTER TABLE projects ADD COLUMN last_opened_at INTEGER")
 

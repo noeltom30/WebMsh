@@ -11,12 +11,34 @@ pip install -r requirements.txt
 python .\app\main.py
 ```
 
+### Run with PostgreSQL in Docker
+
+From the repo root:
+
+```powershell
+docker compose up --build
+```
+
+The backend will be available at `http://localhost:8000` and PostgreSQL at `localhost:5432`.
+
+Set `WEBMSH_DATABASE_URL` to use PostgreSQL outside Docker:
+
+```powershell
+$env:WEBMSH_DATABASE_URL = "postgresql://webmsh:webmsh@localhost:5432/webmsh"
+```
+
+If `WEBMSH_DATABASE_URL` is not set, the backend falls back to local SQLite.
+
 ### Auth Environment Variables
 
 - `WEBMSH_AUTH_SECRET`: secret used to hash OTP/session tokens.
+- `WEBMSH_DATABASE_URL`: PostgreSQL connection string. If omitted, SQLite is used.
+- `WEBMSH_DB_PATH`: SQLite database path when PostgreSQL is not configured.
 - `WEBMSH_DEBUG_OTP`: set `1` to include dev OTP in API responses (default `0`).
 - `WEBMSH_OTP_ENABLED`: set `0` to disable OTP verification flows.
 - `WEBMSH_SESSION_COOKIE_SECURE`: set `1` in HTTPS deployments.
+- `WEBMSH_SESSION_COOKIE_SAMESITE`: cookie SameSite policy (`lax` default, `none` for cross-site frontend/backend).
+- `WEBMSH_CORS_ORIGINS`: comma-separated CORS allowlist (default `http://localhost:5173,http://127.0.0.1:5173`).
 - `WEBMSH_FRONTEND_URL`: frontend URL for OAuth redirects (default `http://localhost:5173`).
 - `WEBMSH_OFFICIAL_EMAIL`: official sender identity.
 

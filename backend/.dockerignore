@@ -1,0 +1,8 @@
+.env
+.env.local
+.pytest_cache
+.venv
+__pycache__
+*.pyc
+*.sqlite3
+Dockerfile.azure.generated
