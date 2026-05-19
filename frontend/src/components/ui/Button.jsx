@@ -3,11 +3,11 @@ function joinClassNames(...parts) {
 }
 
 const VARIANT_CLASSES = {
-  primary: 'border border-cyan-300/35 bg-gradient-to-r from-sky-500/80 to-indigo-500/85 text-white shadow-[0_12px_30px_-18px_rgba(56,189,248,0.95)] hover:from-sky-500 hover:to-indigo-500 focus-visible:ring-cyan-300',
-  secondary: 'border border-slate-600/80 bg-slate-800/80 text-slate-100 hover:bg-slate-700/85 focus-visible:ring-slate-400',
-  ghost: 'border border-transparent bg-transparent text-slate-300 hover:border-cyan-300/35 hover:bg-cyan-400/10 hover:text-cyan-100 focus-visible:ring-cyan-300',
-  outline: 'border border-slate-500/75 bg-slate-900/35 text-slate-100 hover:border-cyan-300/45 hover:bg-slate-800/80 focus-visible:ring-cyan-300',
-  danger: 'border border-rose-300/30 bg-rose-500/85 text-white hover:bg-rose-500 focus-visible:ring-rose-300',
+  primary: 'border border-sky-400/35 dark:border-cyan-300/35 bg-gradient-to-r from-sky-400 to-indigo-400 dark:from-sky-500/80 dark:to-indigo-500/85 text-white shadow-[0_12px_30px_-18px_rgba(56,189,248,0.6)] dark:shadow-[0_12px_30px_-18px_rgba(56,189,248,0.95)] hover:from-sky-500 hover:to-indigo-500 focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
+  secondary: 'border border-slate-200 dark:border-slate-600/80 bg-white/35 backdrop-blur-md dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-[#eef2f6] dark:hover:bg-slate-700/85 focus-visible:ring-slate-400',
+  ghost: 'border border-transparent bg-transparent text-slate-600 dark:text-slate-300 hover:border-sky-300/40 dark:hover:border-cyan-300/35 hover:bg-sky-50 dark:hover:bg-cyan-400/10 hover:text-sky-700 dark:hover:text-cyan-100 focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
+  outline: 'border border-slate-300 dark:border-slate-500/75 bg-white/35 backdrop-blur-md/60 dark:bg-slate-900/35 text-slate-800 dark:text-slate-100 hover:border-sky-400/40 dark:hover:border-cyan-300/45 hover:bg-white/35 backdrop-blur-md dark:hover:bg-slate-800/80 focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
+  danger: 'border border-rose-300/30 bg-rose-500/90 dark:bg-rose-500/85 text-white hover:bg-rose-500 focus-visible:ring-rose-300',
 }
 
 const SIZE_CLASSES = {
@@ -31,7 +31,7 @@ export default function Button({
       disabled={disabled}
       className={joinClassNames(
         'cursor-target inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-[0.01em] transition duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070b14]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f5f8fa] dark:focus-visible:ring-offset-[#070b14]',
         'disabled:cursor-not-allowed disabled:opacity-50',
         VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary,
         SIZE_CLASSES[size] || SIZE_CLASSES.md,

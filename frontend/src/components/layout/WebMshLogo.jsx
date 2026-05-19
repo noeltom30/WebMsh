@@ -2,7 +2,7 @@
  * WebMshLogo — pure SVG recreation of the geometric mandala reference image.
  * 8-pointed star with 4 concentric triangulated rings radiating from centre.
  */
-export default function WebMshLogo({ size = 36, color = '#1a5c8e' }) {
+export default function WebMshLogo({ size = 36, color, className }) {
   const C = 50
 
   /** Return [x, y] at given degree and radius, centred at (50,50). */
@@ -77,10 +77,11 @@ export default function WebMshLogo({ size = 36, color = '#1a5c8e' }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="WebMsh logo"
+      className={className}
     >
       <path
         d={segs.join(' ')}
-        stroke={color}
+        stroke={color || "currentColor"}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"

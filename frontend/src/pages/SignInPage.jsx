@@ -9,6 +9,7 @@ import PasswordField from '../components/ui/PasswordField'
 import { api } from '../api'
 import { useAuth } from '../context/useAuth'
 import { AUTH_ERROR_MESSAGES } from '../utils/auth'
+import ShapeGrid from '../components/ui/ShapeGrid'
 import './AuthModern.css'
 
 const REMEMBER_EMAIL_KEY = 'webmsh_remember_email'
@@ -246,7 +247,26 @@ export default function SignInPage() {
 
   return (
     <div className="auth-modern-page">
-      <div className="auth-modern-shell">
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        zIndex: 0,
+        pointerEvents: 'none'
+      }}>
+        <ShapeGrid
+          speed={0.03}
+          squareSize={40}
+          direction="diagonal"
+          borderColor="#1b2b44"
+          hoverFillColor="#4b559e"
+          shape="triangle"
+          hoverTrailAmount={8}
+          hoverColor="#4b559e"
+        />
+      </div>
+
+      <div className="auth-modern-shell relative z-10">
         <AuthBrandPanel />
 
         <section className="auth-modern-stage">
@@ -291,19 +311,19 @@ export default function SignInPage() {
                 />
 
                 <div className="flex items-center justify-between">
-                  <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(event) => setRememberMe(event.target.checked)}
-                      className="h-4 w-4 rounded border border-white/20 bg-slate-900"
+                      className="h-4 w-4 rounded border border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900"
                     />
                     Remember me
                   </label>
                   <button
                     type="button"
                     onClick={() => setNotice('Password reset endpoint is not connected yet.')}
-                    className="text-sm text-slate-300 transition hover:text-slate-100 focus-visible:outline-none"
+                    className="text-sm text-slate-600 dark:text-slate-300 transition hover:text-slate-800 dark:hover:text-slate-100 focus-visible:outline-none"
                   >
                     Forgot password?
                   </button>

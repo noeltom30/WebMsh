@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { api } from './api'
+import { useTheme } from './hooks/useTheme'
 import Button from './components/ui/Button'
 import WebMshLogo from './components/layout/WebMshLogo'
 import {
@@ -52,7 +53,9 @@ function addToGroup(group, gmshGeo, fallbackGeo, color, fallbackPos) {
 
 function Workspace({ projectId, user, onLogout }) {
   const navigate = useNavigate()
+  const { theme } = useTheme()
   const mountRef = useRef(null)
+  const sceneRef = useRef(null)
   const geomGroupRef = useRef(null)
 
   const [collapsed, setCollapsed] = useState(false)
@@ -88,7 +91,8 @@ function Workspace({ projectId, user, onLogout }) {
     const mount = mountRef.current
     if (!mount) return
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color('#0a0c10')
+    sceneRef.current = scene
+    scene.background = new THREE.Color(theme === 'light' ? '#e7f0f8' : '#0a0c10')
     const { clientWidth: w, clientHeight: h } = mount
     const camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 1000)
     camera.position.set(3, 2, 4)
@@ -103,7 +107,11 @@ function Workspace({ projectId, user, onLogout }) {
     const dir = new THREE.DirectionalLight(0xffffff, 0.8)
     dir.position.set(5, 8, 4)
     scene.add(dir)
-    scene.add(new THREE.GridHelper(10, 20, 0x2c3140, 0x1c202b))
+    
+    // Grid changes based on initial theme, but dynamic updating is handled in next effect
+    const grid = new THREE.GridHelper(10, 20, theme === 'light' ? 0x73bde9 : 0x2c3140, theme === 'light' ? 0xb4d8f1 : 0x1c202b)
+    grid.name = 'gridHelper'
+    scene.add(grid)
     scene.add(new THREE.AxesHelper(1.25))
     const geomGroup = new THREE.Group()
     scene.add(geomGroup)
@@ -132,7 +140,25 @@ function Workspace({ projectId, user, onLogout }) {
         }
       })
     }
-  }, [])
+  }, []) // Empty dependency array, setup once
+
+  // Update theme dynamically in Three.js
+  useEffect(() => {
+    if (!sceneRef.current) return
+    const isLight = theme === 'light'
+    sceneRef.current.background = new THREE.Color(isLight ? '#e7f0f8' : '#0a0c10')
+    
+    // Recreate grid
+    const oldGrid = sceneRef.current.getObjectByName('gridHelper')
+    if (oldGrid) {
+      sceneRef.current.remove(oldGrid)
+      oldGrid.geometry.dispose()
+      oldGrid.material.dispose()
+    }
+    const grid = new THREE.GridHelper(10, 20, isLight ? 0x73bde9 : 0x2c3140, isLight ? 0xb4d8f1 : 0x1c202b)
+    grid.name = 'gridHelper'
+    sceneRef.current.add(grid)
+  }, [theme])
 
   // Render geometry
   useEffect(() => {
@@ -259,25 +285,26 @@ function Workspace({ projectId, user, onLogout }) {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090A0F] text-slate-300 selection:bg-indigo-500/30 font-sans">
+    /* LIGHT MODE FIX: Added dark: overrides to workspace sidebar and main area */
+    <div className="flex h-screen w-screen overflow-hidden bg-sky-50 dark:bg-[#090A0F] text-slate-800 dark:text-slate-300 selection:bg-sky-500/30 dark:selection:bg-indigo-500/30 font-sans">
       {/* Sidebar */}
-      <aside className={`flex flex-col border-r border-slate-800 bg-[#0B0D13] transition-[width] duration-200 ease-in-out shrink-0 relative ${collapsed ? 'w-[56px]' : 'w-[320px]'}`}>
+      <aside className={`flex flex-col border-r border-sky-200 dark:border-slate-800 bg-white/35 backdrop-blur-md dark:bg-[#0B0D13] transition-[width] duration-200 ease-in-out shrink-0 relative ${collapsed ? 'w-[56px]' : 'w-[320px]'}`}>
         {/* Brand */}
-        <div className="flex h-14 items-center justify-between border-b border-slate-800 px-3 gap-2">
+        <div className="flex h-14 items-center justify-between border-b border-sky-200 dark:border-slate-800 px-3 gap-2">
           <div className={`flex items-center gap-2 min-w-0 transition-opacity duration-150 ${collapsed ? 'opacity-0 pointer-events-none w-0 overflow-hidden' : 'opacity-100'}`}>
-            <WebMshLogo size={28} color="#5aaddb" />
-            <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#fff 10%,#7ed4f7 60%,#4ab8ef 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', whiteSpace: 'nowrap' }}>WebMsh</span>
+            <WebMshLogo size={28} className="text-[#070b14] dark:text-[#5aaddb]" />
+            <span className="text-[16px] font-extrabold tracking-[-0.03em] bg-clip-text text-transparent bg-gradient-to-br from-[#070b14] via-[#1e293b] to-[#0f172a] dark:from-[#fff] dark:via-[#7ed4f7] dark:to-[#4ab8ef] whitespace-nowrap">WebMsh</span>
           </div>
-          {collapsed && <div className="flex items-center justify-center w-full"><WebMshLogo size={24} color="#5aaddb" /></div>}
+          {collapsed && <div className="flex items-center justify-center w-full"><WebMshLogo size={24} className="text-[#070b14] dark:text-[#5aaddb]" /></div>}
           <button onClick={() => setCollapsed(!collapsed)}
-            className="flex h-6 w-6 items-center justify-center rounded bg-transparent border-none shadow-none text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors shrink-0 focus:outline-none">
+            className="flex h-6 w-6 items-center justify-center rounded bg-transparent border-none shadow-none text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors shrink-0 focus:outline-none">
             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
           </button>
         </div>
 
         {/* Project name */}
-        <div className={`flex h-9 items-center border-b border-slate-800/60 px-4 ${collapsed ? 'hidden' : 'block'}`}>
-          <span className="font-medium text-[11px] tracking-wide text-slate-400 truncate">{project?.name || 'Workspace'}</span>
+        <div className={`flex h-9 items-center border-b border-sky-100 dark:border-slate-800/60 px-4 ${collapsed ? 'hidden' : 'block'}`}>
+          <span className="font-medium text-[11px] tracking-wide text-slate-500 dark:text-slate-400 truncate">{project?.name || 'Workspace'}</span>
         </div>
 
         {/* Scrollable body */}
@@ -285,19 +312,19 @@ function Workspace({ projectId, user, onLogout }) {
 
           {/* Project info */}
           <section className="space-y-2.5">
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Project</h3>
-            <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Project</h3>
+            <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/20 p-3 space-y-2.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500">Name</span>
-                <span className="font-medium text-slate-300">{project?.name || 'Loading…'}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-300">{project?.name || 'Loading…'}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500">ID</span>
-                <span className="font-medium text-slate-300">{projectId}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-300">{projectId}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500">User</span>
-                <span className="font-medium text-slate-300 text-right overflow-hidden text-ellipsis whitespace-nowrap pl-2">{user?.email || '--'}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-300 text-right overflow-hidden text-ellipsis whitespace-nowrap pl-2">{user?.email || '--'}</span>
               </div>
               <div className="pt-2 grid grid-cols-2 gap-2">
                 <Button variant="secondary" size="sm" onClick={() => navigate('/profile')}>Profile</Button>
@@ -314,8 +341,8 @@ function Workspace({ projectId, user, onLogout }) {
             <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Add Geometry</h3>
             <div className="space-y-3">
               {/* Box */}
-              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
-                <h4 className="text-xs font-medium text-slate-300">Box</h4>
+              <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/35 backdrop-blur-md dark:bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300">Box</h4>
                 <div className="grid grid-cols-3 gap-1.5">
                   <SideInput label="Size X" value={boxParams.width} onChange={e => setBoxParams({ ...boxParams, width: e.target.value })} />
                   <SideInput label="Size Y" value={boxParams.height} onChange={e => setBoxParams({ ...boxParams, height: e.target.value })} />
@@ -330,8 +357,8 @@ function Workspace({ projectId, user, onLogout }) {
               </div>
 
               {/* Sphere */}
-              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
-                <h4 className="text-xs font-medium text-slate-300">Sphere</h4>
+              <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/35 backdrop-blur-md dark:bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300">Sphere</h4>
                 <div className="grid grid-cols-4 gap-1.5">
                   <SideInput label="Radius" value={sphereParams.radius} onChange={e => setSphereParams({ ...sphereParams, radius: e.target.value })} />
                   <SideInput label="Pos X" value={sphereParams.center_x} onChange={e => setSphereParams({ ...sphereParams, center_x: e.target.value })} />
@@ -342,8 +369,8 @@ function Workspace({ projectId, user, onLogout }) {
               </div>
 
               {/* Cylinder */}
-              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
-                <h4 className="text-xs font-medium text-slate-300">Cylinder</h4>
+              <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/35 backdrop-blur-md dark:bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300">Cylinder</h4>
                 <div className="grid grid-cols-2 gap-1.5">
                   <SideInput label="Radius" value={cylParams.radius} onChange={e => setCylParams({ ...cylParams, radius: e.target.value })} />
                   <SideInput label="Height" value={cylParams.height} onChange={e => setCylParams({ ...cylParams, height: e.target.value })} />
@@ -357,15 +384,15 @@ function Workspace({ projectId, user, onLogout }) {
               </div>
 
               {/* Upload */}
-              <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2.5">
-                <h4 className="text-xs font-medium text-slate-300">Import CAD / Mesh</h4>
-                <div className="relative flex flex-col items-center justify-center rounded border border-dashed border-slate-700 bg-slate-900/30 px-4 py-4 text-center transition hover:bg-slate-900/50 hover:border-indigo-500/40">
+              <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/35 backdrop-blur-md dark:bg-slate-900/20 p-3 space-y-2.5">
+                <h4 className="text-xs font-medium text-slate-700 dark:text-slate-300">Import CAD / Mesh</h4>
+                <div className="relative flex flex-col items-center justify-center rounded border border-dashed border-slate-300 dark:border-slate-700 bg-white/35 dark:bg-slate-900/30 px-4 py-4 text-center transition hover:bg-sky-50 dark:hover:bg-slate-900/50 hover:border-sky-400/50 dark:hover:border-indigo-500/40">
                   <input type="file" accept=".step,.stp,.iges,.igs,.brep,.stl,.vtk,.msh"
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     onChange={e => setCadFile(e.target.files?.[0] || null)} />
                   <div className="pointer-events-none">
-                    <p className="text-xs text-indigo-400 font-medium truncate max-w-[180px]">{cadFile ? cadFile.name : 'Choose a file'}</p>
-                    <p className="text-[10px] text-slate-500 mt-1">STEP, IGES, BREP, STL, VTK, MSH</p>
+                    <p className="text-xs text-sky-700 dark:text-indigo-400 font-medium truncate max-w-[180px]">{cadFile ? cadFile.name : 'Choose a file'}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">STEP, IGES, BREP, STL, VTK, MSH</p>
                   </div>
                 </div>
                 <Button variant="secondary" size="sm" className="w-full mt-1" onClick={handleCadUpload} disabled={!cadFile}>Upload & Mesh</Button>
@@ -399,16 +426,16 @@ function Workspace({ projectId, user, onLogout }) {
                 <RefreshIcon />
               </button>
             </div>
-            <div className="rounded border border-slate-800/80 bg-slate-900/20 p-3 space-y-2">
-              <div className="flex justify-between text-xs"><span className="text-slate-500">Health</span><span className="font-medium text-emerald-500/90">{health ? health.status : '--'}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-slate-500">Backend</span><span className="font-medium text-slate-300">{info ? `${info.name} v${info.version}` : '--'}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-slate-500">Gmsh</span><span className="font-medium text-slate-300">{info ? (info.gmsh_available ? 'Ready' : 'Missing') : '--'}</span></div>
+            <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/35 backdrop-blur-md dark:bg-slate-900/20 p-3 space-y-2">
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Health</span><span className="font-medium text-emerald-600 dark:text-emerald-500/90">{health ? health.status : '--'}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Backend</span><span className="font-medium text-slate-800 dark:text-slate-300">{info ? `${info.name} v${info.version}` : '--'}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-slate-500">Gmsh</span><span className="font-medium text-slate-800 dark:text-slate-300">{info ? (info.gmsh_available ? 'Ready' : 'Missing') : '--'}</span></div>
             </div>
           </section>
 
           {/* Feedback */}
           {lastAction && (
-            <div className="rounded border border-indigo-500/20 bg-indigo-500/10 p-2.5 text-xs text-indigo-200">{lastAction}</div>
+            <div className="rounded border border-sky-500/20 dark:border-indigo-500/20 bg-sky-500/10 dark:bg-indigo-500/10 p-2.5 text-xs text-sky-700 dark:text-indigo-200">{lastAction}</div>
           )}
 
           {/* Geometry List */}
@@ -435,22 +462,32 @@ function Workspace({ projectId, user, onLogout }) {
 
       {/* Viewport */}
       <main className="relative flex-1" ref={mountRef}>
+        {collapsed && (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="absolute left-4 top-4 z-20 inline-flex h-10 items-center gap-2 rounded-full border border-sky-300/55 bg-white/85 px-4 text-sm font-medium text-sky-800 shadow-lg shadow-sky-100/60 backdrop-blur-md transition hover:bg-sky-50 dark:border-slate-700 dark:bg-[#0B0D13]/88 dark:text-slate-200 dark:hover:bg-slate-900"
+          >
+            <ChevronRightIcon />
+            <span>Open Panel</span>
+          </button>
+        )}
         {loading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#090A0F]/80 backdrop-blur-sm">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/35 backdrop-blur-md/60 dark:bg-[#090A0F]/80 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500" />
-              <p className="text-xs font-medium tracking-wider text-indigo-300 uppercase">Loading Workspace</p>
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-sky-500/30 dark:border-indigo-500/30 border-t-sky-500 dark:border-t-indigo-500" />
+              <p className="text-xs font-medium tracking-wider text-sky-700 dark:text-indigo-300 uppercase">Loading Workspace</p>
             </div>
           </div>
         )}
         <div className="absolute bottom-5 left-5 z-10 pointer-events-none">
-          <div className="rounded border border-slate-800/60 bg-[#0B0D13]/80 p-3 shadow-xl backdrop-blur-md">
-            <div className="flex flex-col gap-1 text-[10px] font-medium uppercase tracking-widest text-slate-400">
-              <p>Orbit <span className="text-slate-600 lowercase mx-1">drag</span></p>
-              <p>Pan <span className="text-slate-600 lowercase mx-1">right-drag</span></p>
-              <p>Zoom <span className="text-slate-600 lowercase mx-1">scroll</span></p>
+          <div className="rounded border border-slate-200 dark:border-slate-800/60 bg-white/35 backdrop-blur-md/90 dark:bg-[#0B0D13]/80 p-3 shadow-xl backdrop-blur-md">
+            <div className="flex flex-col gap-1 text-[10px] font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <p>Orbit <span className="text-slate-400 dark:text-slate-600 lowercase mx-1">drag</span></p>
+              <p>Pan <span className="text-slate-400 dark:text-slate-600 lowercase mx-1">right-drag</span></p>
+              <p>Zoom <span className="text-slate-400 dark:text-slate-600 lowercase mx-1">scroll</span></p>
             </div>
-            <div className="mt-3 pt-2 border-t border-slate-800/60 text-[11px] text-indigo-400 font-medium">
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-800/60 text-[11px] text-sky-600 dark:text-indigo-400 font-medium">
               {!loading && (project?.name || `Project #${projectId}`)}
             </div>
           </div>

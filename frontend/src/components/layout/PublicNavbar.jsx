@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useTheme } from '../../hooks/useTheme'
 import WebMshLogo from './WebMshLogo'
@@ -21,6 +21,7 @@ export default function PublicNavbar() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
+  const navigate = useNavigate()
   const onHomePage = location.pathname === '/'
 
   return (
@@ -46,7 +47,7 @@ export default function PublicNavbar() {
           <button
             type="button"
             onClick={toggleTheme}
-            className="landing-theme-toggle"
+            className="cursor-target landing-theme-toggle"
             aria-label="Toggle theme"
           >
             {theme === 'dark' ? 'Light' : 'Dark'}
@@ -54,13 +55,13 @@ export default function PublicNavbar() {
 
           {user ? (
             <>
-              <Link to="/profile" className="landing-nav-btn landing-nav-btn-muted">Projects</Link>
-              <Link to="/profile" className="landing-nav-btn landing-nav-btn-primary">Dashboard</Link>
+              <button onClick={() => navigate('/profile')} className="cursor-target landing-nav-btn landing-nav-btn-muted">Projects</button>
+              <button onClick={() => navigate('/profile')} className="cursor-target landing-nav-btn landing-nav-btn-primary">Dashboard</button>
             </>
           ) : (
             <>
-              <Link to="/auth" className="landing-nav-btn landing-nav-btn-muted">Sign In</Link>
-              <Link to="/auth" className="landing-nav-btn landing-nav-btn-primary">Get Started</Link>
+              <button onClick={() => navigate('/auth')} className="cursor-target landing-nav-btn landing-nav-btn-muted">Sign In</button>
+              <button onClick={() => navigate('/auth')} className="cursor-target landing-nav-btn landing-nav-btn-primary">Get Started</button>
             </>
           )}
         </div>
