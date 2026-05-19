@@ -53,10 +53,18 @@ function WorkspaceRoute() {
   )
 }
 
+import TargetCursor from './components/ui/TargetCursor'
+
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<RootRoute />} />
+    <>
+      <TargetCursor 
+        spinDuration={4.2}
+        hideDefaultCursor={false}
+        parallaxOn={true}
+      />
+      <Routes>
+        <Route path="/" element={<RootRoute />} />
       <Route
         path="/auth"
         element={(
@@ -83,6 +91,7 @@ function App() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
 

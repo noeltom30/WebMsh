@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api } from './api'
 import { useAuth } from './context/useAuth'
+import WebMshLogo from './components/layout/WebMshLogo'
 import { AUTH_ERROR_MESSAGES } from './utils/auth'
 
 function passwordScore(password) {
@@ -264,7 +265,10 @@ function AuthPage() {
     <div className="auth-shell">
       <div className="auth-card">
         <section className="auth-brand">
-          <div className="auth-brand-badge">WebMsh</div>
+          <Link to="/" className="auth-brand-badge" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 14px 6px 10px', textDecoration: 'none', cursor: 'pointer' }}>
+            <WebMshLogo size={28} color="#7ed4f7" />
+            <span style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#fff 10%,#7ed4f7 60%,#4ab8ef 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>WebMsh</span>
+          </Link>
           <h1>Secure access to your meshing workspace</h1>
           <p>Sign in with email verification or Google OAuth, then manage projects from a persistent profile dashboard.</p>
           <ul>

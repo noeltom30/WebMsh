@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import { useTheme } from '../../hooks/useTheme'
+import WebMshLogo from './WebMshLogo'
 import './PublicNavbar.css'
 
 function NavItem({ to, children }) {
@@ -25,7 +26,10 @@ export default function PublicNavbar() {
   return (
     <header className="landing-header">
       <div className="landing-nav-shell">
-        <Link to="/" className="landing-brand">WebMsh</Link>
+        <Link to="/" className="landing-brand">
+          <WebMshLogo size={38} color="#5aaddb" />
+          <span className="landing-brand-name">WebMsh</span>
+        </Link>
 
         <nav className="landing-nav-center">
           <NavItem to="/">Home</NavItem>

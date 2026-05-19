@@ -118,10 +118,9 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.03);
-  padding: 6px 12px;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  padding: 4px 8px 4px 6px;
+  text-transform: none;
+  letter-spacing: 0;
   color: #d2d9ea;
   font-weight: 600;
 }

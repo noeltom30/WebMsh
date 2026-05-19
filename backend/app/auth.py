@@ -60,7 +60,7 @@ PASSWORD_MIN_LENGTH = int(os.getenv("WEBMSH_PASSWORD_MIN_LENGTH", "12"))
 PBKDF2_ITERATIONS = int(os.getenv("WEBMSH_PBKDF2_ITERATIONS", "390000"))
 
 AUTH_DEBUG_OTP = os.getenv("WEBMSH_DEBUG_OTP", "0") == "1"
-OTP_ENABLED = os.getenv("WEBMSH_OTP_ENABLED", "1") == "1"
+OTP_ENABLED = os.getenv("WEBMSH_OTP_ENABLED", "0") == "1"
 
 OFFICIAL_EMAIL = os.getenv("WEBMSH_OFFICIAL_EMAIL", "noel.2005.tom@gmail.com")
 SMTP_HOST = os.getenv("WEBMSH_SMTP_HOST", "")
