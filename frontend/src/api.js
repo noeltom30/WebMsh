@@ -117,4 +117,6 @@ export const api = {
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 5000)
   },
+
+  assistantChat: (body) => request('/assistant', { method: 'POST', body: JSON.stringify(body) }),
 }

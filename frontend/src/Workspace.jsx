@@ -22,6 +22,7 @@ const CubeIcon         = () => (<svg width="14" height="14" viewBox="0 0 24 24" 
 const GridIcon         = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>)
 const TagIcon          = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>)
 const DownloadIcon     = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>)
+const ChatIcon         = () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M21 11.5a8.38 8.38 0 0 1-1.5 4.5L21 21l-4.5-1.5A8.38 8.38 0 0 1 12 21a9 9 0 1 1 9-9z"/><circle cx="8.5" cy="11" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="15.5" cy="11" r="1"/></svg>)
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SKETCH_TYPES       = new Set(['sketch_rectangle', 'sketch_circle', 'sketch_polygon'])
@@ -48,6 +49,7 @@ const STAGES = [
   { id: 'mesh',     label: 'Mesh',     Icon: GridIcon },
   { id: 'label',    label: 'Label',    Icon: TagIcon },
   { id: 'export',   label: 'Export',   Icon: DownloadIcon },
+  { id: 'assistant', label: 'Assist',  Icon: ChatIcon },
 ]
 
 const LABEL_DESC = {
@@ -502,6 +504,7 @@ function Workspace({ projectId, user, onLogout }) {
   const geomGroupRef    = useRef(null)
   const geomObjectsRef  = useRef(new Map())
   const toastIdRef      = useRef(0)
+  const assistantEndRef = useRef(null)
 
   const [collapsed,       setCollapsed]       = useState(false)
   const [loading,         setLoading]         = useState(true)
@@ -515,6 +518,9 @@ function Workspace({ projectId, user, onLogout }) {
   const [activeStage,     setActiveStage]     = useState('geometry')
   const [tourActive,      setTourActive]      = useState(false)
   const [showTourPrompt,  setShowTourPrompt]  = useState(false)
+  const [assistantMessages, setAssistantMessages] = useState([])
+  const [assistantInput, setAssistantInput] = useState('')
+  const [assistantBusy, setAssistantBusy] = useState(false)
 
   // Form state (unchanged from original)
   const [meshSettings, setMeshSettings] = useState(DEFAULT_MESH_SETTINGS)
@@ -557,6 +563,10 @@ function Workspace({ projectId, user, onLogout }) {
     const t = setTimeout(() => setShowTourPrompt(true), 2800)
     return () => clearTimeout(t)
   }, [loading])
+
+  useEffect(() => {
+    assistantEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [assistantMessages, assistantBusy])
 
   // ── Build mesh settings payload ───────────────────────────────────────────
   const buildSettings = () => {
@@ -817,6 +827,38 @@ function Workspace({ projectId, user, onLogout }) {
       if (selectedGeomId === id) setSelectedGeomId(null)
       await loadWorkspaceData(`Geometry #${id} deleted`)
     } catch (e) { pushToast(e?.body?.detail || 'Failed to delete geometry.', 'error') }
+  }
+
+  const handleAssistantSend = async () => {
+    const prompt = assistantInput.trim()
+    if (!prompt || assistantBusy) return
+    const userMessage = { role: 'user', content: prompt }
+    const history = [...assistantMessages, userMessage]
+      .slice(-8)
+      .map(({ role, content }) => ({ role, content }))
+    setAssistantMessages(prev => [...prev, userMessage])
+    setAssistantInput('')
+    setAssistantBusy(true)
+    try {
+      const response = await api.assistantChat({
+        project_id: numericProjectId,
+        prompt,
+        history,
+      })
+      setAssistantMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: response?.message || 'Done.', actions: response?.actions || [] },
+      ])
+      if (response?.actions?.length) {
+        await loadWorkspaceData('Assistant updated the workspace')
+      }
+    } catch (err) {
+      const message = err?.body?.detail || 'Assistant request failed.'
+      setAssistantMessages(prev => [...prev, { role: 'assistant', content: message }])
+      pushToast(message, 'error')
+    } finally {
+      setAssistantBusy(false)
+    }
   }
 
   return (
@@ -1081,6 +1123,81 @@ function Workspace({ projectId, user, onLogout }) {
                       ))}
                     </div>
                   </section>
+                </div>
+              )}
+
+              {/* ── ASSISTANT ─────────────────────────────────────── */}
+              {activeStage === 'assistant' && (
+                <div className="space-y-4">
+                  <section className="space-y-2">
+                    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">AI Assistant</h3>
+                    <div className="rounded border border-sky-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/30 p-3">
+                      <div className="flex flex-col gap-2 max-h-64 min-h-[180px] overflow-y-auto pr-1">
+                        {assistantMessages.length === 0 && !assistantBusy && (
+                          <p className="text-[11px] text-slate-500">
+                            Ask me to create, delete, or remesh geometry in this project.
+                          </p>
+                        )}
+                        {assistantMessages.map((msg, idx) => {
+                          const isUser = msg.role === 'user'
+                          const actionSummary = msg.actions?.length
+                            ? msg.actions.map(a => a.detail).join(' · ')
+                            : ''
+                          return (
+                            <div
+                              key={`${msg.role}-${idx}`}
+                              className={`max-w-[85%] rounded-lg px-3 py-2 text-[11px] leading-relaxed ${
+                                isUser
+                                  ? 'ml-auto bg-sky-500 text-white'
+                                  : 'bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-800/60'
+                              }`}>
+                              <p>{msg.content}</p>
+                              {!isUser && actionSummary && (
+                                <p className="mt-1 text-[9px] text-slate-500 dark:text-slate-400">
+                                  Actions: {actionSummary}
+                                </p>
+                              )}
+                            </div>
+                          )
+                        })}
+                        {assistantBusy && (
+                          <div className="max-w-[85%] rounded-lg px-3 py-2 text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800/60">
+                            Thinking…
+                          </div>
+                        )}
+                        <div ref={assistantEndRef} />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <textarea
+                      value={assistantInput}
+                      onChange={e => setAssistantInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleAssistantSend()
+                        }
+                      }}
+                      rows={3}
+                      placeholder="e.g. Create a 2x1x1 box at the origin, then delete geometry 3"
+                      className="w-full resize-none rounded border border-slate-300 dark:border-slate-700/80 bg-white/80 dark:bg-slate-900/40 px-3 py-2 text-xs text-slate-800 dark:text-slate-200 shadow-sm focus:border-sky-500/60 dark:focus:border-indigo-500/60 focus:outline-none focus:ring-1 focus:ring-sky-500/40 dark:focus:ring-indigo-500/40"
+                    />
+                    <div className="flex items-center justify-between text-[10px] text-slate-500">
+                      <span>Shift+Enter for a new line.</span>
+                      <button
+                        onClick={handleAssistantSend}
+                        disabled={assistantBusy || !assistantInput.trim()}
+                        className="h-7 px-3 rounded border border-sky-300 dark:border-indigo-500/40 bg-sky-50 dark:bg-indigo-500/10 text-sky-700 dark:text-indigo-300 font-semibold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed">
+                        {assistantBusy ? 'Working…' : 'Send'}
+                      </button>
+                    </div>
+                  </section>
+
+                  <div className="text-[10px] text-slate-500 leading-relaxed">
+                    Examples: “Add a cylinder radius 0.5 height 2 at x=1 y=0 z=0”, “Extrude sketch 2 by 3”, “Remesh geometry 5 with min size 0.05 max 0.2”.
+                  </div>
                 </div>
               )}
             </div>
