@@ -1,0 +1,43 @@
+# Railway configuration for WebMsh
+# Replace placeholders (`<...>`) and set secrets in Railway UI as needed.
+
+project = "webmsh"
+
+[plugins]
+  [[plugins.postgres]]
+  name = "postgres"
+
+# Backend service (uses the existing Dockerfile at backend/Dockerfile)
+[service.backend]
+name = "webmsh-backend"
+path = "backend"
+# Railway will build using the Dockerfile in the `backend` folder.
+start = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+[service.backend.env]
+# Use Railway Postgres plugin variables to form the DATABASE_URL
+WEBMSH_DATABASE_URL = "postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE"
+WEBMSH_AUTH_SECRET = "__SET_IN_RAILWAY_SECRETS__"
+WEBMSH_CORS_ORIGINS = "https://your-frontend.up.railway.app"
+WEBMSH_FRONTEND_URL = "https://your-frontend.up.railway.app"
+WEBMSH_SESSION_COOKIE_SECURE = "1"
+WEBMSH_SESSION_COOKIE_SAMESITE = "none"
+WEBMSH_OTP_ENABLED = "0"
+WEBMSH_DEBUG_OTP = "0"
+
+# Frontend static site service
+[service.frontend]
+name = "webmsh-frontend"
+path = "frontend"
+# Build command: install and build Vite app
+build = { command = "npm ci && npm run build", output = "dist" }
+
+[service.frontend.env]
+# Point the frontend to the deployed backend
+VITE_API_BASE = "https://<your-backend>.up.railway.app"
+
+# Notes:
+# - Set `WEBMSH_AUTH_SECRET` and any sensitive values in Railway's Secrets for the backend service.
+# - After adding the Postgres plugin, Railway exposes PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE which are used above.
+# - Adjust CORS and frontend URLs to match Railway-provided URLs or custom domains.
+# - Remove any SQLite-specific env (e.g., WEBMSH_DB_PATH) when using Postgres.

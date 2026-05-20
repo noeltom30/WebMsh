@@ -90,12 +90,12 @@
 .auth-modern-strength-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  background: var(--webmsh-brand-gradient);
   transition: width 180ms ease;
 }
 
 .dark .auth-modern-strength-fill {
-  background: linear-gradient(90deg, #7f8796, #d4dae5);
+  background: var(--webmsh-brand-gradient);
 }
 
 .auth-modern-page input[type='email'],
@@ -131,25 +131,23 @@
 }
 
 .auth-modern-page .auth-modern-btn-primary {
-  border-color: rgba(14, 165, 233, 0.3) !important;
-  background: linear-gradient(180deg, #f0f9ff, #bae6fd) !important;
-  color: #0c4a6e !important;
+  border-color: var(--webmsh-brand-gradient-border) !important;
+  background: var(--webmsh-brand-gradient) !important;
+  color: var(--webmsh-brand-gradient-text) !important;
 }
 
 .dark .auth-modern-page .auth-modern-btn-primary {
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  background: linear-gradient(180deg, #ebeff6, #cfd6e3) !important;
-  color: #111319 !important;
+  border-color: var(--webmsh-brand-gradient-border) !important;
+  background: var(--webmsh-brand-gradient) !important;
+  color: var(--webmsh-brand-gradient-text) !important;
 }
 
 .auth-modern-page .auth-modern-btn-primary:hover {
-  border-color: rgba(14, 165, 233, 0.5) !important;
-  background: linear-gradient(180deg, #e0f2fe, #7dd3fc) !important;
+  background: var(--webmsh-brand-gradient-hover) !important;
 }
 
 .dark .auth-modern-page .auth-modern-btn-primary:hover {
-  border-color: rgba(255, 255, 255, 0.24) !important;
-  background: linear-gradient(180deg, #f1f4f8, #d8deea) !important;
+  background: var(--webmsh-brand-gradient-hover) !important;
 }
 
 .auth-modern-page .auth-modern-btn-muted {

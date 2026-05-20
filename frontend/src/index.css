@@ -23,6 +23,13 @@
   --bg-linear-mid: #eaf4ff;
   --bg-linear-end: #e0f0ff;
 
+  /* WebMsh brand: sky blue only */
+  --webmsh-brand-gradient: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+  --webmsh-brand-gradient-hover: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
+  --webmsh-brand-gradient-surface: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(14, 165, 233, 0.1));
+  --webmsh-brand-gradient-border: rgba(14, 165, 233, 0.45);
+  --webmsh-brand-gradient-text: #ffffff;
+
   color: var(--color-text);
   background-color: var(--color-bg);
   text-rendering: optimizeLegibility;
@@ -45,6 +52,30 @@
   --bg-linear-start: #070b14;
   --bg-linear-mid: #0b1120;
   --bg-linear-end: #090f1d;
+
+  --webmsh-brand-gradient: linear-gradient(90deg, #4ab8ef 0%, #0ea5e9 100%);
+  --webmsh-brand-gradient-hover: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+  --webmsh-brand-gradient-surface: linear-gradient(135deg, rgba(74, 184, 239, 0.16), rgba(14, 165, 233, 0.1));
+  --webmsh-brand-gradient-border: rgba(56, 189, 248, 0.35);
+  --webmsh-brand-gradient-text: #ffffff;
+}
+
+@layer components {
+  .webmsh-brand-gradient {
+    border: 1px solid var(--webmsh-brand-gradient-border);
+    background: var(--webmsh-brand-gradient);
+    color: var(--webmsh-brand-gradient-text);
+    transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+  }
+
+  .webmsh-brand-gradient:hover:not(:disabled) {
+    background: var(--webmsh-brand-gradient-hover);
+  }
+
+  .webmsh-brand-gradient-surface {
+    border-color: var(--webmsh-brand-gradient-border);
+    background: var(--webmsh-brand-gradient-surface);
+  }
 }
 
 * {
@@ -268,15 +299,15 @@ body {
 }
 
 .auth-tab.active {
-  background: linear-gradient(145deg, #f0f9ff, #bae6fd);
-  border-color: rgba(14, 165, 233, 0.28);
-  color: #0c4a6e;
+  background: var(--webmsh-brand-gradient);
+  border-color: var(--webmsh-brand-gradient-border);
+  color: var(--webmsh-brand-gradient-text);
 }
 
 .dark .auth-tab.active {
-  background: linear-gradient(145deg, #ffffff, #e6edff);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #101218;
+  background: var(--webmsh-brand-gradient);
+  border-color: var(--webmsh-brand-gradient-border);
+  color: var(--webmsh-brand-gradient-text);
 }
 
 .auth-error,
@@ -404,13 +435,19 @@ body {
 }
 
 .auth-btn {
-  background: linear-gradient(140deg, #f0f9ff, #bae6fd);
-  color: #0c4a6e;
+  background: var(--webmsh-brand-gradient);
+  border-color: var(--webmsh-brand-gradient-border);
+  color: var(--webmsh-brand-gradient-text);
 }
 
 .dark .auth-btn {
-  background: linear-gradient(140deg, #f4f7fc, #cfd6e3);
-  color: #101218;
+  background: var(--webmsh-brand-gradient);
+  border-color: var(--webmsh-brand-gradient-border);
+  color: var(--webmsh-brand-gradient-text);
+}
+
+.auth-btn:hover {
+  background: var(--webmsh-brand-gradient-hover);
 }
 
 .auth-btn:hover {

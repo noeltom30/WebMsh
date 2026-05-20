@@ -140,15 +140,19 @@
 }
 
 .landing-nav-btn-primary {
-  border-color: rgba(14, 165, 233, 0.3);
-  background: linear-gradient(145deg, #f0f9ff, #bae6fd);
-  color: #0c4a6e;
+  border-color: var(--webmsh-brand-gradient-border);
+  background: var(--webmsh-brand-gradient);
+  color: var(--webmsh-brand-gradient-text);
 }
 
 .dark .landing-nav-btn-primary {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: linear-gradient(145deg, #ffffff, #ebf2ff);
-  color: #11131a;
+  border-color: var(--webmsh-brand-gradient-border);
+  background: var(--webmsh-brand-gradient);
+  color: var(--webmsh-brand-gradient-text);
+}
+
+.landing-nav-btn-primary:hover {
+  background: var(--webmsh-brand-gradient-hover);
 }
 
 .landing-nav-btn-muted {

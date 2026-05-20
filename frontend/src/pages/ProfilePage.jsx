@@ -11,7 +11,7 @@ import ShapeGrid from '../components/ui/ShapeGrid';
 import './HomePage.css';
 import { getPasswordStrengthScore, strengthLabel } from '../utils/auth'
 
-const DASHBOARD_PANEL_CLASS = 'rounded-3xl border border-sky-500/15 bg-white/35 p-5 shadow-[0_28px_60px_-34px_rgba(2,132,199,0.22)] backdrop-blur-md dark:border-[#2b3444] dark:bg-[radial-gradient(circle_at_18%_0%,rgba(56,189,248,0.07),transparent_26%),radial-gradient(circle_at_82%_12%,rgba(99,102,241,0.1),transparent_30%),linear-gradient(180deg,rgba(27,30,38,0.96),rgba(31,34,42,0.92))] dark:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.82)]'
+const DASHBOARD_PANEL_CLASS = 'rounded-3xl border border-sky-500/15 bg-white/35 p-5 shadow-[0_28px_60px_-34px_rgba(2,132,199,0.22)] backdrop-blur-md dark:border-[#2b3444] dark:bg-[radial-gradient(circle_at_18%_0%,rgba(56,189,248,0.07),transparent_26%),radial-gradient(circle_at_82%_12%,rgba(74,184,239,0.1),transparent_30%),linear-gradient(180deg,rgba(27,30,38,0.96),rgba(31,34,42,0.92))] dark:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.82)]'
 const DASHBOARD_INSET_CLASS = 'rounded-2xl border border-sky-500/18 bg-white/40 shadow-[0_18px_45px_-30px_rgba(2,132,199,0.18)] backdrop-blur-md dark:border-[#30394a] dark:bg-[linear-gradient(180deg,rgba(45,48,56,0.92),rgba(52,56,64,0.86))] dark:shadow-[0_22px_42px_-30px_rgba(0,0,0,0.72)]'
 const DASHBOARD_CARD_CLASS =
   'rounded-xl border border-sky-500/14 bg-sky-500/[0.07] backdrop-blur-sm shadow-[0_12px_32px_-24px_rgba(2,132,199,0.18)] dark:border-[#2a3344] dark:bg-[rgba(22,26,34,0.55)] dark:shadow-none'
@@ -20,6 +20,9 @@ const CARD_CHIP_CLASS =
   'rounded-full border border-sky-500/14 bg-sky-500/[0.06] px-2 py-1 backdrop-blur-sm dark:border-[#2a3344] dark:bg-[rgba(22,26,34,0.45)]'
 
 const PROJECT_ACTION_BTN_CLASS = '!rounded-md'
+
+const WEBMSH_ACCENT_BOX_CLASS =
+  'rounded-2xl border p-4 backdrop-blur-md webmsh-brand-gradient-surface'
 
 function formatDate(value) {
   if (!value) return 'Not available'
@@ -511,7 +514,7 @@ export default function ProfilePage() {
               </div>
 
               {showCreateProject && (
-                <div className="mt-6 rounded-2xl border border-sky-500/24 bg-sky-500/10 p-4 backdrop-blur-md dark:border-cyan-300/18 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.18))]">
+                <div className={`${WEBMSH_ACCENT_BOX_CLASS} mt-6`}>
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
                     <InputField
                       id="new-project-name"
@@ -701,7 +704,7 @@ export default function ProfilePage() {
                   </Button>
 
                   {passwordOtpPending && (
-                    <div className="space-y-3 rounded-2xl border border-sky-500/24 bg-sky-500/10 p-4 backdrop-blur-md dark:border-cyan-300/18 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.18))]">
+                    <div className={`${WEBMSH_ACCENT_BOX_CLASS} space-y-3`}>
                       <InputField
                         id="password-change-otp"
                         label="Email Verification Code"
@@ -740,7 +743,7 @@ export default function ProfilePage() {
                 Stay in control of your authenticated session and project access.
               </p>
               <div className="mt-4 space-y-2">
-                <Button variant="outline" className="w-full" onClick={() => setShowCreateProject(true)}>
+                <Button variant="primary" className="w-full" onClick={() => setShowCreateProject(true)}>
                   New Project
                 </Button>
                 <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={busy}>

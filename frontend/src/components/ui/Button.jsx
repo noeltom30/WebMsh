@@ -3,7 +3,7 @@ function joinClassNames(...parts) {
 }
 
 const VARIANT_CLASSES = {
-  primary: 'border border-sky-400/35 dark:border-cyan-300/35 bg-gradient-to-r from-sky-400 to-indigo-400 dark:from-sky-500/80 dark:to-indigo-500/85 text-white shadow-[0_12px_30px_-18px_rgba(56,189,248,0.6)] dark:shadow-[0_12px_30px_-18px_rgba(56,189,248,0.95)] hover:from-sky-500 hover:to-indigo-500 focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
+  primary: 'webmsh-brand-gradient shadow-[0_12px_30px_-18px_rgba(74,184,239,0.35)] focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
   secondary: 'border border-slate-200 dark:border-slate-600/80 bg-white/35 backdrop-blur-md dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-[#eef2f6] dark:hover:bg-slate-700/85 focus-visible:ring-slate-400',
   ghost: 'border border-transparent bg-transparent text-slate-600 dark:text-slate-300 hover:border-sky-300/40 dark:hover:border-cyan-300/35 hover:bg-sky-50 dark:hover:bg-cyan-400/10 hover:text-sky-700 dark:hover:text-cyan-100 focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
   soft: 'border border-sky-500/18 bg-sky-500/10 text-slate-800 shadow-[0_8px_20px_-16px_rgba(2,132,199,0.18)] backdrop-blur-sm dark:border-[#3a4558] dark:bg-[rgba(36,42,52,0.92)] dark:text-slate-100 hover:border-sky-400/30 hover:bg-sky-500/16 dark:hover:border-cyan-300/22 dark:hover:bg-[rgba(44,52,64,0.96)] focus-visible:ring-sky-400 dark:focus-visible:ring-cyan-300',
