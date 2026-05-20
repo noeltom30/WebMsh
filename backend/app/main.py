@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 try:
+    from .assistant import router as assistant_router
     from .auth import AuthUser, get_current_user, init_auth_db, router as auth_router
     from .db import connect_db
     from .mesh_service import gmsh_available
     from .project_service import count_user_geometries, count_user_projects
     from .projects import initialize_project_schema, router as projects_router
 except ImportError:
+    from assistant import router as assistant_router
     from auth import AuthUser, get_current_user, init_auth_db, router as auth_router
     from db import connect_db
     from mesh_service import gmsh_available
@@ -38,6 +40,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(projects_router)
+app.include_router(assistant_router)
 
 
 @app.on_event("startup")

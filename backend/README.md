@@ -42,6 +42,16 @@ If `WEBMSH_DATABASE_URL` is not set, the backend falls back to local SQLite.
 - `WEBMSH_FRONTEND_URL`: frontend URL for OAuth redirects (default `http://localhost:5173`).
 - `WEBMSH_OFFICIAL_EMAIL`: official sender identity.
 
+### Assistant (LLM) Environment Variables
+
+- `WEBMSH_LLM_PROVIDER`: `openai` or `gemini` (default `openai`).
+- `WEBMSH_LLM_API_KEY`: API key for the selected provider.
+- `WEBMSH_LLM_API_BASE`: base URL for the LLM API
+  - OpenAI default: `https://api.openai.com/v1`
+  - Gemini default: `https://generativelanguage.googleapis.com/v1beta` (the backend will fall back to `/v1` if needed)
+- `WEBMSH_LLM_MODEL`: model name (defaults to `gpt-4o-mini` for OpenAI, `gemini-1.5-flash-latest` for Gemini). Use `auto` to let the backend pick an available Gemini model that supports `generateContent`.
+- `WEBMSH_LLM_TIMEOUT`: request timeout in seconds (default `45`).
+
 ### OTP Email Delivery (SMTP)
 
 Set these to deliver OTP to inbox instead of console logs:

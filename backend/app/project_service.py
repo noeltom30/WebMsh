@@ -6,10 +6,10 @@ from fastapi import HTTPException
 
 try:
     from .db import is_postgres, isoformat_ts, now_ts, table_columns
-    from .project_models import GeometryRecord, Mesh, ProjectDetail, ProjectSummary
+    from .project_models import GeometryRecord, Mesh, MeshSettings, ProjectDetail, ProjectSummary
 except ImportError:
     from db import is_postgres, isoformat_ts, now_ts, table_columns
-    from project_models import GeometryRecord, Mesh, ProjectDetail, ProjectSummary
+    from project_models import GeometryRecord, Mesh, MeshSettings, ProjectDetail, ProjectSummary
 
 
 def init_project_db(conn: sqlite3.Connection) -> None:
@@ -217,6 +217,31 @@ def update_geometry_labels(
     conn.execute(
         "UPDATE project_geometries SET params = ?, updated_at = ? WHERE id = ?",
         (json.dumps(params), timestamp, geometry_id),
+    )
+    conn.execute(
+        "UPDATE projects SET updated_at = ? WHERE id = ?",
+        (timestamp, project_id),
+    )
+    return _get_geometry_record(conn, user_id, project_id, geometry_id)
+
+
+def update_geometry_mesh(
+    conn: sqlite3.Connection,
+    user_id: int,
+    project_id: int,
+    geometry_id: int,
+    mesh: Mesh,
+    *,
+    mesh_settings: MeshSettings | None = None,
+) -> GeometryRecord:
+    record = _get_geometry_record(conn, user_id, project_id, geometry_id)
+    params = dict(record.params)
+    if mesh_settings is not None:
+        params["mesh_settings"] = mesh_settings.model_dump(mode="json")
+    timestamp = now_ts()
+    conn.execute(
+        "UPDATE project_geometries SET mesh = ?, params = ?, updated_at = ? WHERE id = ? AND project_id = ?",
+        (json.dumps(mesh.model_dump(mode="json")), json.dumps(params), timestamp, geometry_id, project_id),
     )
     conn.execute(
         "UPDATE projects SET updated_at = ? WHERE id = ?",
