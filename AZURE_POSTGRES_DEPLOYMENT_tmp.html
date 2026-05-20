@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AZURE_POSTGRES_DEPLOYMENT.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="webmsh-azure-deployment-with-postgresql">WebMsh Azure Deployment with PostgreSQL</h1>
+<p>This guide deploys WebMsh using:</p>
+<ul>
+<li><strong>Backend:</strong> Azure Container Apps</li>
+<li><strong>Database:</strong> Azure Database for PostgreSQL Flexible Server</li>
+<li><strong>Frontend:</strong> Azure Storage Static Website</li>
+</ul>
+<p>This avoids SQLite file-locking issues on Azure Files and avoids Azure Static Web Apps region restrictions.</p>
+<hr>
+<h2 id="1-build-and-push-the-backend-image">1. Build and Push the Backend Image</h2>
+<p>Run this on your local machine from the repo root:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> D:\Projects\WebMsh
+
+<span class="hljs-variable">$IMAGE</span>=<span class="hljs-string">&quot;ghcr.io/noeltom30/webmsh-backend:postgres-20260518&quot;</span>
+
+docker build <span class="hljs-literal">-t</span> <span class="hljs-variable">$IMAGE</span> .\backend
+docker push <span class="hljs-variable">$IMAGE</span>
+</div></code></pre>
+<p>The GHCR package must be public, or Azure Container Apps must be configured with GHCR registry credentials.</p>
+<hr>
+<h2 id="2-create-azure-base-resources">2. Create Azure Base Resources</h2>
+<p>Run these in Azure Cloud Shell or Azure CLI:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$RG</span>=<span class="hljs-string">&quot;rg-webmsh&quot;</span>
+<span class="hljs-variable">$LOC</span>=<span class="hljs-string">&quot;centralindia&quot;</span>
+<span class="hljs-variable">$ENV</span>=<span class="hljs-string">&quot;cae-webmsh&quot;</span>
+<span class="hljs-variable">$APP</span>=<span class="hljs-string">&quot;ca-webmsh-api&quot;</span>
+<span class="hljs-variable">$IMAGE</span>=<span class="hljs-string">&quot;ghcr.io/noeltom30/webmsh-backend:postgres-20260518&quot;</span>
+
+az <span class="hljs-built_in">group</span> create <span class="hljs-literal">--name</span> <span class="hljs-variable">$RG</span> <span class="hljs-literal">--location</span> <span class="hljs-variable">$LOC</span>
+
+az extension add <span class="hljs-literal">--name</span> containerapp <span class="hljs-literal">--upgrade</span>
+
+az provider register <span class="hljs-literal">--namespace</span> Microsoft.App
+az provider register <span class="hljs-literal">--namespace</span> Microsoft.OperationalInsights
+az provider register <span class="hljs-literal">--namespace</span> Microsoft.DBforPostgreSQL
+
+az containerapp env create `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$ENV</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--location</span> <span class="hljs-variable">$LOC</span>
+</div></code></pre>
+<hr>
+<h2 id="3-create-postgresql-flexible-server">3. Create PostgreSQL Flexible Server</h2>
+<pre class="hljs"><code><div><span class="hljs-variable">$PGSERVER</span>=<span class="hljs-string">&quot;pg-webmsh-<span class="hljs-variable">$</span>((Get-Random -Minimum 10000 -Maximum 99999))&quot;</span>
+<span class="hljs-variable">$PGDB</span>=<span class="hljs-string">&quot;webmsh&quot;</span>
+<span class="hljs-variable">$PGUSER</span>=<span class="hljs-string">&quot;webmshadmin&quot;</span>
+<span class="hljs-variable">$PGPASS</span>=<span class="hljs-string">&quot;&lt;PUT_A_STRONG_PASSWORD_HERE&gt;&quot;</span>
+</div></code></pre>
+<p>Create the server:</p>
+<pre class="hljs"><code><div>az postgres flexible<span class="hljs-literal">-server</span> create `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$PGSERVER</span> `
+  <span class="hljs-literal">--location</span> <span class="hljs-variable">$LOC</span> `
+  <span class="hljs-literal">--admin-user</span> <span class="hljs-variable">$PGUSER</span> `
+  <span class="hljs-literal">--admin-password</span> <span class="hljs-variable">$PGPASS</span> `
+  <span class="hljs-literal">--sku-name</span> Standard_B1ms `
+  <span class="hljs-literal">--tier</span> Burstable `
+  <span class="hljs-literal">--storage-size</span> <span class="hljs-number">32</span> `
+  <span class="hljs-literal">--version</span> <span class="hljs-number">16</span> `
+  <span class="hljs-literal">--public-access</span> <span class="hljs-number">0.0</span>.<span class="hljs-number">0.0</span>
+</div></code></pre>
+<p>Create the database separately:</p>
+<pre class="hljs"><code><div>az postgres flexible<span class="hljs-literal">-server</span> db create `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--server-name</span> <span class="hljs-variable">$PGSERVER</span> `
+  <span class="hljs-literal">--database-name</span> <span class="hljs-variable">$PGDB</span>
+</div></code></pre>
+<p>Build the database URL. The backtick before <code>?</code> matters in PowerShell:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$DATABASE_URL</span> = <span class="hljs-string">&quot;postgresql://<span class="hljs-variable">$</span>{PGUSER}:<span class="hljs-variable">$PGPASS</span>@<span class="hljs-variable">$PGSERVER</span>.postgres.database.azure.com:5432/<span class="hljs-variable">$PGDB</span>`?sslmode=require&quot;</span>
+<span class="hljs-variable">$DATABASE_URL</span>
+</div></code></pre>
+<p>It should end like this:</p>
+<pre class="hljs"><code><div>/webmsh?sslmode=require
+</div></code></pre>
+<hr>
+<h2 id="4-deploy-the-backend-container-app">4. Deploy the Backend Container App</h2>
+<p>Generate an auth secret:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$AUTH_SECRET</span> = <span class="hljs-operator">-join</span> ((<span class="hljs-number">48</span>..<span class="hljs-number">57</span>) + (<span class="hljs-number">65</span>..<span class="hljs-number">90</span>) + (<span class="hljs-number">97</span>..<span class="hljs-number">122</span>) | <span class="hljs-built_in">Get-Random</span> <span class="hljs-literal">-Count</span> <span class="hljs-number">64</span> | <span class="hljs-built_in">ForEach-Object</span> {[<span class="hljs-built_in">char</span>]<span class="hljs-variable">$_</span>})
+</div></code></pre>
+<p>Create the Container App:</p>
+<pre class="hljs"><code><div>az containerapp create `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--environment</span> <span class="hljs-variable">$ENV</span> `
+  <span class="hljs-literal">--image</span> <span class="hljs-variable">$IMAGE</span> `
+  <span class="hljs-literal">--target-port</span> <span class="hljs-number">8000</span> `
+  <span class="hljs-literal">--ingress</span> external `
+  <span class="hljs-literal">--min-replicas</span> <span class="hljs-number">0</span> `
+  <span class="hljs-literal">--max-replicas</span> <span class="hljs-number">1</span> `
+  <span class="hljs-literal">--cpu</span> <span class="hljs-number">0.25</span> `
+  <span class="hljs-literal">--memory</span> <span class="hljs-number">0.5</span><span class="hljs-built_in">Gi</span> `
+  <span class="hljs-literal">--secrets</span> `
+    database<span class="hljs-literal">-url</span>=<span class="hljs-string">&quot;<span class="hljs-variable">$DATABASE_URL</span>&quot;</span> `
+    auth<span class="hljs-literal">-secret</span>=<span class="hljs-string">&quot;<span class="hljs-variable">$AUTH_SECRET</span>&quot;</span> `
+  <span class="hljs-literal">--env-vars</span> `
+    WEBMSH_DATABASE_URL=secretref:database<span class="hljs-literal">-url</span> `
+    WEBMSH_AUTH_SECRET=secretref:auth<span class="hljs-literal">-secret</span> `
+    WEBMSH_SESSION_COOKIE_SECURE=<span class="hljs-number">1</span> `
+    WEBMSH_SESSION_COOKIE_SAMESITE=none `
+    WEBMSH_OTP_ENABLED=<span class="hljs-number">0</span>
+</div></code></pre>
+<p>If the backend cannot connect to Postgres, add the Azure services firewall rule:</p>
+<pre class="hljs"><code><div>az postgres flexible<span class="hljs-literal">-server</span> firewall<span class="hljs-literal">-rule</span> create `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$PGSERVER</span> `
+  <span class="hljs-literal">--rule-name</span> AllowAzureServices `
+  <span class="hljs-literal">--start-ip-address</span> <span class="hljs-number">0.0</span>.<span class="hljs-number">0.0</span> `
+  <span class="hljs-literal">--end-ip-address</span> <span class="hljs-number">0.0</span>.<span class="hljs-number">0.0</span>
+</div></code></pre>
+<hr>
+<h2 id="5-test-the-backend">5. Test the Backend</h2>
+<p>Get the backend URL:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$API_FQDN</span> = az containerapp show `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--query</span> <span class="hljs-string">&quot;properties.configuration.ingress.fqdn&quot;</span> `
+  <span class="hljs-literal">-o</span> tsv
+
+<span class="hljs-variable">$API_URL</span>=<span class="hljs-string">&quot;https://<span class="hljs-variable">$API_FQDN</span>&quot;</span>
+<span class="hljs-variable">$API_URL</span>
+</div></code></pre>
+<p>Test health and auth config:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">Invoke-RestMethod</span> <span class="hljs-string">&quot;<span class="hljs-variable">$API_URL</span>/health&quot;</span> | <span class="hljs-built_in">ConvertTo-Json</span>
+<span class="hljs-built_in">Invoke-RestMethod</span> <span class="hljs-string">&quot;<span class="hljs-variable">$API_URL</span>/auth/config&quot;</span> | <span class="hljs-built_in">ConvertTo-Json</span>
+</div></code></pre>
+<p>Expected:</p>
+<pre class="hljs"><code><div>status: ok
+otp_enabled: false
+</div></code></pre>
+<p>If the app is unhealthy, inspect logs:</p>
+<pre class="hljs"><code><div>az containerapp revision list `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--query</span> <span class="hljs-string">&quot;[].{name:name,active:properties.active,healthy:properties.healthState,image:properties.template.containers[0].image}&quot;</span> `
+  <span class="hljs-literal">-o</span> table
+
+az containerapp logs show `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--tail</span> <span class="hljs-number">100</span>
+</div></code></pre>
+<hr>
+<h2 id="6-build-the-frontend">6. Build the Frontend</h2>
+<p>Run this locally:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> D:\Projects\WebMsh\frontend
+
+<span class="hljs-variable">$env:VITE_API_BASE</span>=<span class="hljs-string">&quot;&lt;YOUR_API_URL&gt;&quot;</span>
+npm ci
+npm run build
+<span class="hljs-built_in">Remove-Item</span> Env:VITE_API_BASE
+</div></code></pre>
+<p>Example:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$env:VITE_API_BASE</span>=<span class="hljs-string">&quot;https://ca-webmsh-api.example.azurecontainerapps.io&quot;</span>
+</div></code></pre>
+<hr>
+<h2 id="7-deploy-frontend-with-azure-storage-static-website">7. Deploy Frontend with Azure Storage Static Website</h2>
+<p>Static Web Apps may be blocked by subscription region policies, so this setup uses Storage Static Website hosting.</p>
+<p>Create a frontend storage account:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$FE_ST</span>=<span class="hljs-string">&quot;stwebmshfe<span class="hljs-variable">$</span>((Get-Random -Minimum 10000 -Maximum 99999))&quot;</span>
+
+az storage account create `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--location</span> <span class="hljs-variable">$LOC</span> `
+  <span class="hljs-literal">--sku</span> Standard_LRS `
+  <span class="hljs-literal">--kind</span> StorageV2
+</div></code></pre>
+<p>Enable static website hosting:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$FE_KEY</span> = az storage account keys list `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--account-name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--query</span> <span class="hljs-string">&quot;[0].value&quot;</span> `
+  <span class="hljs-literal">-o</span> tsv
+
+az storage blob service<span class="hljs-literal">-properties</span> update `
+  <span class="hljs-literal">--account-name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--account-key</span> <span class="hljs-variable">$FE_KEY</span> `
+  <span class="hljs-literal">--static-website</span> `
+  <span class="hljs-literal">--index-document</span> index.html `
+  <span class="hljs-literal">--404-document</span> index.html
+</div></code></pre>
+<p>Upload the frontend build from your local machine:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> D:\Projects\WebMsh
+
+az storage blob upload<span class="hljs-literal">-batch</span> `
+  <span class="hljs-literal">--account-name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--account-key</span> <span class="hljs-variable">$FE_KEY</span> `
+  <span class="hljs-literal">--destination</span> <span class="hljs-string">&#x27;$web&#x27;</span> `
+  <span class="hljs-literal">--source</span> .\frontend\dist `
+  <span class="hljs-literal">--overwrite</span>
+</div></code></pre>
+<p>Get the frontend URL:</p>
+<pre class="hljs"><code><div><span class="hljs-variable">$FRONTEND_URL</span> = az storage account show `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--query</span> <span class="hljs-string">&quot;primaryEndpoints.web&quot;</span> `
+  <span class="hljs-literal">-o</span> tsv
+
+<span class="hljs-variable">$FRONTEND_URL</span> = <span class="hljs-variable">$FRONTEND_URL</span>.TrimEnd(<span class="hljs-string">&quot;/&quot;</span>)
+<span class="hljs-variable">$FRONTEND_URL</span>
+</div></code></pre>
+<hr>
+<h2 id="8-update-backend-cors">8. Update Backend CORS</h2>
+<p>After the frontend URL exists, update the backend:</p>
+<pre class="hljs"><code><div>az containerapp update `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--set-env-vars</span> `
+    WEBMSH_FRONTEND_URL=<span class="hljs-variable">$FRONTEND_URL</span> `
+    WEBMSH_CORS_ORIGINS=<span class="hljs-variable">$FRONTEND_URL</span> `
+    WEBMSH_SESSION_COOKIE_SECURE=<span class="hljs-number">1</span> `
+    WEBMSH_SESSION_COOKIE_SAMESITE=none `
+    WEBMSH_OTP_ENABLED=<span class="hljs-number">0</span>
+</div></code></pre>
+<p>Open the frontend URL in a browser and test the app.</p>
+<hr>
+<h2 id="updating-later">Updating Later</h2>
+<h3 id="backend-changes">Backend changes</h3>
+<p>Use a new image tag, then update Container Apps:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> D:\Projects\WebMsh
+
+<span class="hljs-variable">$IMAGE</span>=<span class="hljs-string">&quot;ghcr.io/noeltom30/webmsh-backend:postgres-&lt;NEW_TAG&gt;&quot;</span>
+
+docker build <span class="hljs-literal">-t</span> <span class="hljs-variable">$IMAGE</span> .\backend
+docker push <span class="hljs-variable">$IMAGE</span>
+
+az containerapp update `
+  <span class="hljs-literal">--name</span> <span class="hljs-variable">$APP</span> `
+  <span class="hljs-literal">--resource-group</span> <span class="hljs-variable">$RG</span> `
+  <span class="hljs-literal">--image</span> <span class="hljs-variable">$IMAGE</span>
+</div></code></pre>
+<h3 id="frontend-changes">Frontend changes</h3>
+<p>Rebuild with the API URL and upload again:</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> D:\Projects\WebMsh\frontend
+
+<span class="hljs-variable">$env:VITE_API_BASE</span>=<span class="hljs-string">&quot;&lt;YOUR_API_URL&gt;&quot;</span>
+npm run build
+<span class="hljs-built_in">Remove-Item</span> Env:VITE_API_BASE
+
+<span class="hljs-built_in">cd</span> D:\Projects\WebMsh
+
+az storage blob upload<span class="hljs-literal">-batch</span> `
+  <span class="hljs-literal">--account-name</span> <span class="hljs-variable">$FE_ST</span> `
+  <span class="hljs-literal">--account-key</span> <span class="hljs-variable">$FE_KEY</span> `
+  <span class="hljs-literal">--destination</span> <span class="hljs-string">&#x27;$web&#x27;</span> `
+  <span class="hljs-literal">--source</span> .\frontend\dist `
+  <span class="hljs-literal">--overwrite</span>
+</div></code></pre>
+<hr>
+<h2 id="cost-control">Cost Control</h2>
+<p>Use these settings to keep costs low:</p>
+<ul>
+<li>PostgreSQL: <code>Standard_B1ms</code>, Burstable, 32 GB storage</li>
+<li>Container Apps: <code>min-replicas 0</code>, <code>max-replicas 1</code>, <code>cpu 0.25</code>, <code>memory 0.5Gi</code></li>
+<li>Frontend: Azure Storage Static Website with <code>Standard_LRS</code></li>
+<li>OTP disabled unless SMTP is configured</li>
+</ul>
+<p>PostgreSQL is the main monthly cost.</p>
+<hr>
+<h2 id="reset--stop-spending">Reset / Stop Spending</h2>
+<p>To delete everything in this deployment:</p>
+<pre class="hljs"><code><div>az <span class="hljs-built_in">group</span> delete <span class="hljs-literal">--name</span> rg<span class="hljs-literal">-webmsh</span> <span class="hljs-literal">--yes</span> <span class="hljs-literal">--no-wait</span>
+</div></code></pre>
+<p>Verify:</p>
+<pre class="hljs"><code><div>az <span class="hljs-built_in">group</span> exists <span class="hljs-literal">--name</span> rg<span class="hljs-literal">-webmsh</span>
+</div></code></pre>
+<p><code>false</code> means the resource group is gone.</p>
+
+</body>
+</html>

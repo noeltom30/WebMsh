@@ -13,6 +13,13 @@ import { getPasswordStrengthScore, strengthLabel } from '../utils/auth'
 
 const DASHBOARD_PANEL_CLASS = 'rounded-3xl border border-sky-500/15 bg-white/35 p-5 shadow-[0_28px_60px_-34px_rgba(2,132,199,0.22)] backdrop-blur-md dark:border-[#2b3444] dark:bg-[radial-gradient(circle_at_18%_0%,rgba(56,189,248,0.07),transparent_26%),radial-gradient(circle_at_82%_12%,rgba(99,102,241,0.1),transparent_30%),linear-gradient(180deg,rgba(27,30,38,0.96),rgba(31,34,42,0.92))] dark:shadow-[0_30px_70px_-40px_rgba(0,0,0,0.82)]'
 const DASHBOARD_INSET_CLASS = 'rounded-2xl border border-sky-500/18 bg-white/40 shadow-[0_18px_45px_-30px_rgba(2,132,199,0.18)] backdrop-blur-md dark:border-[#30394a] dark:bg-[linear-gradient(180deg,rgba(45,48,56,0.92),rgba(52,56,64,0.86))] dark:shadow-[0_22px_42px_-30px_rgba(0,0,0,0.72)]'
+const DASHBOARD_CARD_CLASS =
+  'rounded-xl border border-sky-500/14 bg-sky-500/[0.07] backdrop-blur-sm shadow-[0_12px_32px_-24px_rgba(2,132,199,0.18)] dark:border-[#2a3344] dark:bg-[rgba(22,26,34,0.55)] dark:shadow-none'
+
+const CARD_CHIP_CLASS =
+  'rounded-full border border-sky-500/14 bg-sky-500/[0.06] px-2 py-1 backdrop-blur-sm dark:border-[#2a3344] dark:bg-[rgba(22,26,34,0.45)]'
+
+const PROJECT_ACTION_BTN_CLASS = '!rounded-md'
 
 function formatDate(value) {
   if (!value) return 'Not available'
@@ -21,11 +28,23 @@ function formatDate(value) {
   return date.toLocaleString()
 }
 
+function formatTime(value) {
+  if (!value) return 'Not available'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Not available'
+  return date.toLocaleTimeString()
+}
+
 function StatTile({ label, value }) {
   return (
-    <div className={`${DASHBOARD_INSET_CLASS} rounded-xl p-4 transition duration-200 hover:-translate-y-0.5 hover:border-sky-400/35 dark:hover:border-cyan-300/22`}>
-      <dt className="text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{label}</dt>
-      <dd className="mt-2 break-all text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">{value}</dd>
+    <div
+      className={`${DASHBOARD_CARD_CLASS} px-3 py-3 transition duration-200 hover:-translate-y-0.5 hover:border-sky-400/30 dark:hover:border-cyan-300/20`}
+      role="listitem"
+    >
+      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-sky-600 dark:text-cyan-200/90">
+        {label}
+      </p>
+      <p className="mt-1 break-all text-sm font-medium leading-snug text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   )
 }
@@ -51,18 +70,18 @@ function ProjectCard({
   onSaveRename,
 }) {
   return (
-    <article className={`${DASHBOARD_INSET_CLASS} p-5 transition duration-200 hover:border-sky-400/35 dark:hover:border-cyan-300/18`}>
+    <article className={`${DASHBOARD_CARD_CLASS} p-5 transition duration-200 hover:border-sky-400/30 dark:hover:border-cyan-300/20`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-lg font-semibold text-slate-900 dark:text-white">{project.name}</p>
           <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <span className="rounded-full border border-sky-500/15 bg-white/45 px-2 py-1 backdrop-blur-sm dark:border-[#323b4b] dark:bg-[#20242c]">
+            <span className={CARD_CHIP_CLASS}>
               Created {formatDate(project.created_at)}
             </span>
-            <span className="rounded-full border border-sky-500/15 bg-white/45 px-2 py-1 backdrop-blur-sm dark:border-[#323b4b] dark:bg-[#20242c]">
+            <span className={CARD_CHIP_CLASS}>
               Updated {formatDate(project.updated_at)}
             </span>
-            <span className="rounded-full border border-sky-500/15 bg-white/45 px-2 py-1 backdrop-blur-sm dark:border-[#323b4b] dark:bg-[#20242c]">
+            <span className={CARD_CHIP_CLASS}>
               Last opened {formatDate(project.last_opened_at)}
             </span>
             <span className="rounded-full border border-cyan-300/30 bg-sky-500/12 px-2 py-1 text-sky-700 dark:border-cyan-400/18 dark:bg-cyan-400/10 dark:text-cyan-100">
@@ -71,23 +90,23 @@ function ProjectCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => onOpen(project.id)} disabled={busy}>
+        <div className="inline-flex shrink-0 flex-nowrap items-center gap-1.5">
+          <Button size="sm" variant="soft" className={PROJECT_ACTION_BTN_CLASS} onClick={() => onOpen(project.id)} disabled={busy}>
             Open
           </Button>
           {!renameActive && (
-            <Button variant="ghost" onClick={() => onStartRename(project)} disabled={busy}>
+            <Button size="sm" variant="soft" className={PROJECT_ACTION_BTN_CLASS} onClick={() => onStartRename(project)} disabled={busy}>
               Rename
             </Button>
           )}
-          <Button variant="danger" onClick={() => onDelete(project.id)} disabled={busy}>
+          <Button size="sm" variant="danger" className={PROJECT_ACTION_BTN_CLASS} onClick={() => onDelete(project.id)} disabled={busy}>
             Delete
           </Button>
         </div>
       </div>
 
       {renameActive && (
-          <div className="mt-4 grid gap-3 rounded-xl border border-sky-500/20 bg-white/55 p-4 backdrop-blur-md dark:border-[#30394a] dark:bg-[linear-gradient(180deg,rgba(32,36,44,0.92),rgba(38,42,50,0.84))] sm:grid-cols-[1fr_auto_auto] sm:items-end">
+          <div className={`${DASHBOARD_CARD_CLASS} mt-4 grid gap-3 bg-sky-500/[0.1] p-4 dark:bg-[rgba(22,26,34,0.7)] sm:grid-cols-[1fr_auto_auto] sm:items-end`}>
           <InputField
             id={`rename-project-${project.id}`}
             label="Project Name"
@@ -484,12 +503,12 @@ export default function ProfilePage() {
                 <AlertBanner tone="success">{notice}</AlertBanner>
               </div>
 
-              <dl className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" role="list">
                 <StatTile label="Email" value={profile?.email || user?.email || 'Not available'} />
                 <StatTile label="2FA" value={profile?.totp_enabled ? 'Enabled' : 'Disabled'} />
-                <StatTile label="Joined" value={formatDate(profile?.created_at)} />
+                <StatTile label="Joined" value={formatTime(profile?.created_at)} />
                 <StatTile label="Projects" value={String(projects.length)} />
-              </dl>
+              </div>
 
               {showCreateProject && (
                 <div className="mt-6 rounded-2xl border border-sky-500/24 bg-sky-500/10 p-4 backdrop-blur-md dark:border-cyan-300/18 dark:bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.18))]">
@@ -724,7 +743,7 @@ export default function ProfilePage() {
                 <Button variant="outline" className="w-full" onClick={() => setShowCreateProject(true)}>
                   New Project
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={handleSignOut} disabled={busy}>
+                <Button variant="outline" className="w-full" onClick={handleSignOut} disabled={busy}>
                   Sign Out
                 </Button>
                 <Link to="/" className="block text-center text-sm text-sky-600 transition hover:text-sky-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 dark:text-cyan-200 dark:hover:text-cyan-100">
